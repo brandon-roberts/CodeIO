@@ -1,0 +1,67 @@
+syntax = "proto3";
+package codeio.ai;
+
+option java_package = "io.codeio.proto.ai";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "index/context_index.proto";
+
+enum SearchMode {
+  SEARCH_MODE_UNSPECIFIED = 0;
+  SEARCH_MODE_EXACT       = 1;
+  SEARCH_MODE_FUZZY       = 2;
+  SEARCH_MODE_SEMANTIC    = 3;
+  SEARCH_MODE_HYBRID      = 4;  // RRF fusion of trigram + semantic (default for AI)
+}
+
+enum SearchScope {
+  SEARCH_SCOPE_UNSPECIFIED = 0;
+  SEARCH_SCOPE_ALL         = 1;
+  SEARCH_SCOPE_SYMBOLS     = 2;
+  SEARCH_SCOPE_FILES       = 3;
+  SEARCH_SCOPE_COMMENTS    = 4;
+  SEARCH_SCOPE_STRINGS     = 5;
+}
+
+message SearchFilters {
+  repeated codeio.core.Language languages  = 1;
+  repeated string               file_globs = 2;
+}
+
+message SpotlightQuery {
+  string        workspace_id  = 1;
+  string        query_text    = 2;
+  SearchMode    search_mode   = 3;
+  SearchScope   scope         = 4;
+  SearchFilters filters       = 5;
+  int32         max_results   = 6;
+  int32         context_lines = 7;
+}
+
+enum MatchKind {
+  MATCH_KIND_UNSPECIFIED = 0;
+  MATCH_KIND_EXACT       = 1;
+  MATCH_KIND_FUZZY       = 2;
+  MATCH_KIND_SEMANTIC    = 3;
+}
+
+message SpotlightHit {
+  codeio.core.FileRef         file_ref       = 1;
+  codeio.core.Span            span           = 2;
+  float                       score          = 3;
+  MatchKind                   match_kind     = 4;
+  repeated string             context_before = 5;
+  repeated string             context_after  = 6;
+  codeio.index.SymbolRecord   symbol_info    = 7;
+}
+
+message SpotlightResults {
+  repeated SpotlightHit hits          = 1;
+  int32                 total_matches = 2;
+  bool                  truncated     = 3;
+}
+
+service SpotlightService {
+  rpc Search(SpotlightQuery) returns (SpotlightResults);
+}

@@ -1,0 +1,50 @@
+syntax = "proto3";
+package codeio.core;
+
+option java_package = "io.codeio.proto.core";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+// Language enum covers all 8 host runtimes plus the native CodeIO language.
+enum Language {
+  LANGUAGE_UNKNOWN    = 0;
+  LANGUAGE_CPP        = 1;
+  LANGUAGE_RUST       = 2;
+  LANGUAGE_HASKELL    = 3;
+  LANGUAGE_LISP       = 4;
+  LANGUAGE_PYTHON     = 5;
+  LANGUAGE_JAVA       = 6;
+  LANGUAGE_JAVASCRIPT = 7;
+  LANGUAGE_TYPESCRIPT = 8;
+  LANGUAGE_PHP        = 9;
+  LANGUAGE_CODEIO     = 10;
+}
+
+message FileRef {
+  string                    path          = 1;
+  Language                  language      = 2;
+  google.protobuf.Timestamp last_modified = 3;
+  int64                     size_bytes    = 4;
+  string                    workspace_id  = 5;
+}
+
+message Position {
+  int32 line        = 1;
+  int32 column      = 2;
+  int64 byte_offset = 3;
+}
+
+message Span {
+  Position start = 1;
+  Position end   = 2;
+}
+
+enum SeverityLevel {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_HINT        = 1;
+  SEVERITY_INFO        = 2;
+  SEVERITY_WARNING     = 3;
+  SEVERITY_ERROR       = 4;
+  SEVERITY_FATAL       = 5;
+}

@@ -1,0 +1,131 @@
+syntax = "proto3";
+package codeio.ai;
+
+option java_package = "io.codeio.proto.ai";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "index/context_index.proto";
+import "index/dependency_map.proto";
+import "ai/types.proto";
+import "ai/spotlight.proto";
+import "ai/context_window.proto";
+
+// ─── AI Query ───────────────────────────────────────────────────────────────
+
+message AIQueryRequest {
+  string                       workspace_id   = 1;
+  string                       query          = 2;
+  FocusPoint                   focus          = 3;
+  ContextBudget                context_budget = 4;
+  repeated string              tools_allowed  = 5;
+  repeated ConversationTurn    history        = 6;
+  string                       model          = 7;
+}
+
+message ToolCall {
+  string id         = 1;
+  string name       = 2;
+  string input_json = 3;
+}
+
+message ToolResult {
+  string tool_call_id  = 1;
+  string content_json  = 2;
+  bool   is_error      = 3;
+}
+
+message AIQueryResponse {
+  oneof payload {
+    string     text_delta    = 1;
+    ToolCall   tool_call     = 2;
+    ToolResult tool_result   = 3;
+    string     finish_reason = 4;
+  }
+}
+
+// ─── Code Scan ──────────────────────────────────────────────────────────────
+
+enum ScanType {
+  SCAN_TYPE_UNSPECIFIED  = 0;
+  SCAN_TYPE_SECURITY     = 1;
+  SCAN_TYPE_STYLE        = 2;
+  SCAN_TYPE_LOGIC        = 3;
+  SCAN_TYPE_DOCUMENTATION = 4;
+  SCAN_TYPE_DEPENDENCY   = 5;
+}
+
+enum ScanDepth {
+  SCAN_DEPTH_UNSPECIFIED = 0;
+  SCAN_DEPTH_SHALLOW     = 1;
+  SCAN_DEPTH_MEDIUM      = 2;
+  SCAN_DEPTH_DEEP        = 3;
+}
+
+message CodeScanRequest {
+  string                       workspace_id = 1;
+  repeated codeio.core.FileRef targets      = 2;
+  repeated ScanType            scan_types   = 3;
+  ScanDepth                    depth        = 4;
+}
+
+message ScanFinding {
+  codeio.core.FileRef    file_ref   = 1;
+  codeio.core.Span       span       = 2;
+  codeio.core.SeverityLevel severity = 3;
+  ScanType               kind       = 4;
+  string                 message    = 5;
+  string                 suggestion = 6;
+}
+
+message CodeScanResponse {
+  repeated ScanFinding findings      = 1;
+  int32                files_scanned = 2;
+}
+
+// ─── Context ─────────────────────────────────────────────────────────────────
+
+message ContextRequest {
+  string        workspace_id = 1;
+  FocusPoint    focus        = 2;
+  ContextBudget budget       = 3;
+}
+
+message ContextResponse {
+  ContextWindow window = 1;
+}
+
+// ─── Logic Check ─────────────────────────────────────────────────────────────
+
+message LogicCheckRequest {
+  string                  workspace_id    = 1;
+  string                  source          = 2;
+  codeio.core.Language    language        = 3;
+  string                  context_type_env = 4;
+}
+
+message TypeDiagnostic {
+  codeio.core.Span          span          = 1;
+  codeio.core.SeverityLevel severity      = 2;
+  string                    message       = 3;
+  string                    expected_type = 4;
+  string                    actual_type   = 5;
+}
+
+message LogicCheckResponse {
+  bool                    has_errors  = 1;
+  repeated TypeDiagnostic diagnostics = 2;
+}
+
+// ─── Main Service ─────────────────────────────────────────────────────────────
+
+// AIService is the single interface between the LLM and all CodeIO services.
+// The AI never calls Rust/Haskell services directly — only through here.
+service AIService {
+  rpc Query          (AIQueryRequest)               returns (stream AIQueryResponse);
+  rpc CodeScan       (CodeScanRequest)              returns (CodeScanResponse);
+  rpc GetContext     (ContextRequest)               returns (ContextResponse);
+  rpc Spotlight      (SpotlightQuery)               returns (SpotlightResults);
+  rpc LogicCheck     (LogicCheckRequest)            returns (LogicCheckResponse);
+  rpc GetDependencyMap(codeio.index.DepMapRequest)  returns (codeio.index.DepMapResponse);
+}

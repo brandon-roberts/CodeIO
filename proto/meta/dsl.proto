@@ -1,0 +1,42 @@
+syntax = "proto3";
+package codeio.meta;
+
+option java_package = "io.codeio.proto.meta";
+option java_multiple_files = true;
+
+import "frontend/ast.proto";
+
+message DSLDefinition {
+  string          name         = 1;
+  string          version      = 2;
+  repeated string syntax_rules = 3;
+  string          semantics    = 4;
+}
+
+message DSLInstance {
+  string  dsl_name     = 1;
+  string  source       = 2;
+  string  workspace_id = 3;
+}
+
+message EvalContext {
+  map<string, string> bindings = 1;
+}
+
+message DSLEvalRequest {
+  DSLInstance  instance = 1;
+  EvalContext  context  = 2;
+}
+
+message DSLEvalResponse {
+  codeio.frontend.ASTNode result  = 1;
+  bool                    success = 2;
+  repeated string         errors  = 3;
+}
+
+service DSLService {
+  rpc RegisterDSL(DSLDefinition)  returns (RegisterDSLResponse);
+  rpc EvalDSL    (DSLEvalRequest) returns (DSLEvalResponse);
+}
+
+message RegisterDSLResponse { bool success = 1; }

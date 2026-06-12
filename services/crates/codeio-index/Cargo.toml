@@ -1,0 +1,24 @@
+[package]
+name    = "codeio-index"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "codeio-index"
+path = "src/main.rs"
+
+[dependencies]
+codeio-common = { path = "../codeio-common" }
+tokio         = { workspace = true }
+tonic         = { workspace = true }
+prost-types   = { workspace = true }
+anyhow        = { workspace = true }
+tracing       = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sha2          = { workspace = true }
+hex           = { workspace = true }
+walkdir       = { workspace = true }
+ignore        = { workspace = true }
+notify        = { workspace = true }

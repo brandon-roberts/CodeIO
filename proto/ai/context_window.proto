@@ -1,0 +1,62 @@
+syntax = "proto3";
+package codeio.ai;
+
+option java_package = "io.codeio.proto.ai";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "index/context_index.proto";
+import "ai/types.proto";
+
+enum IncludeReason {
+  INCLUDE_REASON_UNSPECIFIED       = 0;
+  INCLUDE_REASON_DIRECT_IMPORT     = 1;
+  INCLUDE_REASON_SAME_FILE         = 2;
+  INCLUDE_REASON_SYMBOL_REF        = 3;
+  INCLUDE_REASON_SEMANTIC_SIMILAR  = 4;
+  INCLUDE_REASON_DEPENDENCY_CHAIN  = 5;
+  INCLUDE_REASON_FOCUS_POINT       = 6;
+}
+
+// ContextSlice is one ranked entry within a ContextWindow.
+message ContextSlice {
+  codeio.index.IndexEntry entry          = 1;
+  float                   relevance_score = 2;
+  IncludeReason           include_reason  = 3;
+  int32                   rank            = 4;
+}
+
+// ContextWindow is the fully assembled context delivered to an AI call.
+// Slices are ordered by rank (rank=0 is most relevant).
+message ContextWindow {
+  string                  request_id         = 1;
+  string                  workspace_id       = 2;
+  FocusPoint              focus_point        = 3;
+  repeated ContextSlice   slices             = 4;
+  int32                   total_tokens       = 5;
+  bool                    truncated          = 6;
+  string                  truncation_summary = 7;
+}
+
+message AssembleWindowRequest {
+  string        workspace_id = 1;
+  FocusPoint    focus        = 2;
+  ContextBudget budget       = 3;
+}
+
+// Large windows are written to a memory-mapped file to avoid gRPC 4MB limit.
+message AssembleWindowResponse {
+  string mmap_path    = 1;
+  int64  byte_size    = 2;
+  string checksum     = 3;
+  int32  total_tokens = 4;
+}
+
+message GetWindowRequest {
+  string mmap_path = 1;
+}
+
+service ContextWindowService {
+  rpc AssembleWindow(AssembleWindowRequest) returns (AssembleWindowResponse);
+  rpc GetWindow     (GetWindowRequest)      returns (ContextWindow);
+}

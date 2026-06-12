@@ -1,0 +1,31 @@
+syntax = "proto3";
+package codeio.ai;
+
+option java_package = "io.codeio.proto.ai";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "index/context_index.proto";
+
+// FocusPoint identifies what the AI's attention is on: a cursor position,
+// a symbol, or a natural language query over the workspace.
+message FocusPoint {
+  codeio.core.FileRef         file_ref = 1;
+  codeio.core.Position        position = 2;
+  codeio.index.SymbolRecord   symbol   = 3;
+  string                      query    = 4;
+}
+
+// ContextBudget controls how many tokens the context assembler may consume.
+// context_tokens = max_tokens - system_reserve - history_reserve - response_reserve
+message ContextBudget {
+  int32 max_tokens      = 1;
+  int32 system_reserve  = 2;
+  int32 history_reserve = 3;
+  int32 response_reserve = 4;
+}
+
+message ConversationTurn {
+  string role    = 1;  // "user" | "assistant" | "system"
+  string content = 2;
+}

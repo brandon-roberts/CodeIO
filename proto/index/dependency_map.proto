@@ -1,0 +1,52 @@
+syntax = "proto3";
+package codeio.index;
+
+option java_package = "io.codeio.proto.index";
+option java_multiple_files = true;
+
+import "core/common.proto";
+
+message DependencyNode {
+  string              id      = 1;
+  codeio.core.FileRef file    = 2;
+  string              symbol  = 3;
+  string              module  = 4;
+}
+
+enum EdgeKind {
+  EDGE_KIND_UNSPECIFIED = 0;
+  EDGE_KIND_IMPORT      = 1;
+  EDGE_KIND_CALL        = 2;
+  EDGE_KIND_INHERIT     = 3;
+  EDGE_KIND_USE         = 4;
+  EDGE_KIND_REEXPORT    = 5;
+}
+
+message DependencyEdge {
+  string   from_id = 1;
+  string   to_id   = 2;
+  EdgeKind kind    = 3;
+}
+
+message DependencyGraph {
+  repeated DependencyNode nodes = 1;
+  repeated DependencyEdge edges = 2;
+}
+
+message DepMapRequest {
+  string workspace_id = 1;
+  oneof target {
+    codeio.core.FileRef file                 = 2;
+    string              symbol_qualified_name = 3;
+  }
+  int32  max_depth  = 4;
+  bool   transitive = 5;
+}
+
+message DepMapResponse {
+  DependencyGraph graph = 1;
+}
+
+service DependencyMapService {
+  rpc GetDependencyMap(DepMapRequest) returns (DepMapResponse);
+}

@@ -1,0 +1,23 @@
+syntax = "proto3";
+package codeio.core;
+
+option java_package = "io.codeio.proto.core";
+option java_multiple_files = true;
+
+import "core/common.proto";
+
+message DiagnosticMessage {
+  SeverityLevel severity = 1;
+  string        code     = 2;
+  string        message  = 3;
+  Span          span     = 4;
+  FileRef       file     = 5;
+  string        hint     = 6;
+}
+
+message CodeIOError {
+  string                    service     = 1;
+  string                    kind        = 2;
+  string                    message     = 3;
+  repeated DiagnosticMessage diagnostics = 4;
+}

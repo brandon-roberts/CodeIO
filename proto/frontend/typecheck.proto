@@ -1,0 +1,43 @@
+syntax = "proto3";
+package codeio.frontend;
+
+option java_package = "io.codeio.proto.frontend";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "frontend/ast.proto";
+
+message TypeEnv {
+  map<string, string> bindings = 1;
+}
+
+message Constraint {
+  string lhs  = 1;
+  string rhs  = 2;
+  codeio.core.Span span = 3;
+}
+
+message TypeCheckRequest {
+  string  workspace_id = 1;
+  ASTNode ast          = 2;
+  TypeEnv env          = 3;
+}
+
+message TypeCheckResponse {
+  TypeEnv                  result_env   = 1;
+  repeated Constraint      constraints  = 2;
+  repeated TypeDiagnostic  errors       = 3;
+  bool                     success      = 4;
+}
+
+message TypeDiagnostic {
+  codeio.core.Span          span          = 1;
+  codeio.core.SeverityLevel severity      = 2;
+  string                    message       = 3;
+  string                    expected_type = 4;
+  string                    actual_type   = 5;
+}
+
+service TypeCheckService {
+  rpc TypeCheck(TypeCheckRequest) returns (TypeCheckResponse);
+}

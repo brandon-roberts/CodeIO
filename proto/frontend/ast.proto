@@ -1,0 +1,117 @@
+syntax = "proto3";
+package codeio.frontend;
+
+option java_package = "io.codeio.proto.frontend";
+option java_multiple_files = true;
+
+import "core/common.proto";
+
+// Core IR node — everything the parser produces is an ASTNode.
+// The oneof keeps the wire format compact while preserving type safety.
+message ASTNode {
+  string            id     = 1;
+  codeio.core.Span  span   = 2;
+
+  oneof node {
+    Module      module      = 10;
+    FunctionDef function_def = 11;
+    TypeDef     type_def    = 12;
+    Expr        expr        = 13;
+    Pattern     pattern     = 14;
+    Import      import      = 15;
+    MacroCall   macro_call  = 16;
+  }
+}
+
+message Module {
+  string            name        = 1;
+  repeated ASTNode  declarations = 2;
+}
+
+message FunctionDef {
+  string            name        = 1;
+  repeated string   params      = 2;
+  string            type_sig    = 3;
+  ASTNode           body        = 4;
+  bool              is_macro    = 5;
+}
+
+message TypeDef {
+  string          name       = 1;
+  repeated string type_params = 2;
+  oneof body {
+    RecordDef  record  = 10;
+    UnionDef   union   = 11;
+    AliasDef   alias   = 12;
+  }
+}
+
+message RecordDef  { repeated FieldDef fields = 1; }
+message FieldDef   { string name = 1; string type_expr = 2; }
+message UnionDef   { repeated VariantDef variants = 1; }
+message VariantDef { string name = 1; repeated string types = 2; }
+message AliasDef   { string type_expr = 1; }
+
+message Expr {
+  oneof kind {
+    LitInt    lit_int    = 1;
+    LitFloat  lit_float  = 2;
+    LitStr    lit_str    = 3;
+    LitBool   lit_bool   = 4;
+    Var       var        = 5;
+    App       app        = 6;
+    Lambda    lambda     = 7;
+    Let       let        = 8;
+    If        if_expr    = 9;
+    Match     match      = 10;
+    Block     block      = 11;
+  }
+}
+
+message LitInt   { int64  value = 1; }
+message LitFloat { double value = 1; }
+message LitStr   { string value = 1; }
+message LitBool  { bool   value = 1; }
+message Var      { string name  = 1; }
+message App      { ASTNode func = 1; repeated ASTNode args = 2; }
+message Lambda   { repeated string params = 1; ASTNode body = 2; }
+message Let      { string name = 1; ASTNode value = 2; ASTNode body = 3; }
+message If       { ASTNode cond = 1; ASTNode then = 2; ASTNode else = 3; }
+message Block    { repeated ASTNode stmts = 1; }
+
+message Match {
+  ASTNode              scrutinee = 1;
+  repeated MatchArm    arms      = 2;
+}
+
+message MatchArm {
+  ASTNode pattern = 1;
+  ASTNode body    = 2;
+  ASTNode guard   = 3;
+}
+
+message Pattern {
+  oneof kind {
+    string   wildcard  = 1;
+    string   bind      = 2;
+    LitInt   lit_int   = 3;
+    LitStr   lit_str   = 4;
+    ConPat   con       = 5;
+    TuplePat tuple     = 6;
+  }
+}
+
+message ConPat   { string name = 1; repeated ASTNode fields = 2; }
+message TuplePat { repeated ASTNode elements = 1; }
+
+message Import {
+  string          module_path = 1;
+  repeated string names       = 2;
+  bool            qualified   = 3;
+  string          alias       = 4;
+}
+
+message MacroCall {
+  string          name = 1;
+  repeated ASTNode args = 2;
+}

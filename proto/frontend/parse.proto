@@ -1,0 +1,26 @@
+syntax = "proto3";
+package codeio.frontend;
+
+option java_package = "io.codeio.proto.frontend";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "core/error.proto";
+import "frontend/ast.proto";
+
+message ParseRequest {
+  string               workspace_id = 1;
+  codeio.core.FileRef  file_ref     = 2;
+  string               source       = 3;
+  bool                 include_trivia = 4;
+}
+
+message ParseResponse {
+  ASTNode                          root        = 1;
+  repeated codeio.core.DiagnosticMessage diagnostics = 2;
+  bool                             has_errors  = 3;
+}
+
+service ParseService {
+  rpc Parse(ParseRequest) returns (ParseResponse);
+}

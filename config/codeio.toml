@@ -1,0 +1,55 @@
+# CodeIO master configuration
+
+[workspace]
+# Set to your project root when running outside Docker
+root = "."
+id   = "default"
+
+[services]
+# gRPC addresses for all service processes
+# Override with environment variables: CODEIO_<SERVICE>_ADDR
+vm        = "localhost:50050"
+index     = "localhost:50052"
+spotlight = "localhost:50053"
+context   = "localhost:50054"
+depmap    = "localhost:50055"
+parse     = "localhost:50060"
+typecheck = "localhost:50061"
+meta      = "localhost:50070"
+orch      = "localhost:50090"
+ai        = "localhost:50080"
+
+[context]
+# Default token budget for context window assembly
+max_tokens       = 100000
+system_reserve   = 4000
+history_reserve  = 8000
+response_reserve = 4000
+mmap_dir         = "/tmp/codeio"
+
+[index]
+# File patterns excluded from workspace scanning
+exclude_globs = [
+  ".git/**",
+  "target/**",
+  "node_modules/**",
+  "__pycache__/**",
+  "*.pyc",
+  "proto/gen/**",
+  "dist/**",
+  "build/**",
+]
+
+[spotlight]
+# Trigram index settings
+max_results_default = 20
+context_lines       = 3
+embedding_backend   = "sqlite-vec"  # or "qdrant" | "pinecone"
+
+[ai]
+default_model   = "claude-sonnet-4-6"
+max_tool_rounds = 10
+
+[log]
+level  = "info"
+format = "json"

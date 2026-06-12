@@ -1,0 +1,16 @@
+[package]
+name    = "codeio-depmap"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "codeio-depmap"
+path = "src/main.rs"
+
+[dependencies]
+codeio-common  = { path = "../codeio-common" }
+tokio          = { workspace = true }
+tonic          = { workspace = true }
+anyhow         = { workspace = true }
+tracing        = { workspace = true }
+tracing-subscriber = { workspace = true }

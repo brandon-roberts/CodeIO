@@ -1,0 +1,46 @@
+# Build artifacts
+target/
+proto/gen/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Rust
+services/target/
+
+# Node
+node_modules/
+*.js.map
+lsp/dist/
+
+# Java
+*.class
+*.jar
+orchestrator/target/
+
+# PHP
+vendor/
+
+# Config / secrets
+.env
+*.local.toml
+codeio.local.toml
+
+# Runtime
+/tmp/codeio/
+*.bin
+
+# Editor
+.idea/
+.vscode/settings.json
+*.swp

@@ -1,0 +1,19 @@
+[package]
+name    = "codeio-context"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "codeio-context"
+path = "src/main.rs"
+
+[dependencies]
+codeio-common  = { path = "../codeio-common" }
+tokio          = { workspace = true }
+tonic          = { workspace = true }
+anyhow         = { workspace = true }
+tracing        = { workspace = true }
+tracing-subscriber = { workspace = true }
+sha2           = { workspace = true }
+hex            = { workspace = true }
+prost          = { workspace = true }

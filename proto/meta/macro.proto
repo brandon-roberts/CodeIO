@@ -1,0 +1,33 @@
+syntax = "proto3";
+package codeio.meta;
+
+option java_package = "io.codeio.proto.meta";
+option java_multiple_files = true;
+
+import "frontend/ast.proto";
+
+message MacroExpansionRequest {
+  string                    workspace_id = 1;
+  codeio.frontend.MacroCall call         = 2;
+  string                    macro_env    = 3;
+}
+
+message MacroExpansionResponse {
+  codeio.frontend.ASTNode expanded   = 1;
+  repeated string         warnings   = 2;
+  bool                    success    = 3;
+}
+
+message SyntaxTemplate {
+  string name     = 1;
+  string pattern  = 2;
+  string template = 3;
+}
+
+service MacroService {
+  rpc Expand       (MacroExpansionRequest)   returns (MacroExpansionResponse);
+  rpc RegisterMacro(RegisterMacroRequest)    returns (RegisterMacroResponse);
+}
+
+message RegisterMacroRequest  { SyntaxTemplate template = 1; string workspace_id = 2; }
+message RegisterMacroResponse { bool success = 1; string macro_id = 2; }

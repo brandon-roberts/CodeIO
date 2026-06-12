@@ -1,0 +1,101 @@
+syntax = "proto3";
+package codeio.index;
+
+option java_package = "io.codeio.proto.index";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "google/protobuf/timestamp.proto";
+
+enum ChunkKind {
+  CHUNK_KIND_UNSPECIFIED   = 0;
+  CHUNK_KIND_FILE_HEADER   = 1;
+  CHUNK_KIND_IMPORT_BLOCK  = 2;
+  CHUNK_KIND_FUNCTION      = 3;
+  CHUNK_KIND_CLASS         = 4;
+  CHUNK_KIND_MODULE        = 5;
+  CHUNK_KIND_COMMENT_BLOCK = 6;
+  CHUNK_KIND_TYPE_DEF      = 7;
+  CHUNK_KIND_TEST          = 8;
+  CHUNK_KIND_MACRO_DEF     = 9;
+  CHUNK_KIND_LITERAL_BLOCK = 10;
+}
+
+enum SymbolKind {
+  SYMBOL_KIND_UNSPECIFIED = 0;
+  SYMBOL_KIND_FUNCTION    = 1;
+  SYMBOL_KIND_TYPE        = 2;
+  SYMBOL_KIND_VARIABLE    = 3;
+  SYMBOL_KIND_MODULE      = 4;
+  SYMBOL_KIND_CLASS       = 5;
+  SYMBOL_KIND_INTERFACE   = 6;
+  SYMBOL_KIND_MACRO       = 7;
+  SYMBOL_KIND_CONSTANT    = 8;
+}
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PUBLIC      = 1;
+  VISIBILITY_PRIVATE     = 2;
+  VISIBILITY_INTERNAL    = 3;
+}
+
+message SymbolRecord {
+  string              name           = 1;
+  string              qualified_name = 2;
+  SymbolKind          kind           = 3;
+  Visibility          visibility     = 4;
+  string              signature      = 5;
+  string              doc_comment    = 6;
+  codeio.core.FileRef defined_at     = 7;
+  repeated codeio.core.FileRef references = 8;
+}
+
+// IndexEntry is the atomic unit of the codebase index.
+// One entry per parse-meaningful chunk (function, class, import block, etc.).
+message IndexEntry {
+  string                    id               = 1;
+  string                    workspace_id     = 2;
+  codeio.core.FileRef       file_ref         = 3;
+  codeio.core.Span          span             = 4;
+  ChunkKind                 chunk_kind       = 5;
+  SymbolRecord              symbol_record    = 6;
+  string                    content_hash     = 7;
+  string                    embedding_id     = 8;
+  int32                     tokens           = 9;
+  float                     importance_score = 10;
+  google.protobuf.Timestamp last_indexed     = 11;
+  string                    raw_content      = 12;
+}
+
+message IndexRequest {
+  string                       workspace_id  = 1;
+  repeated codeio.core.FileRef files         = 2;
+  bool                         force_reindex = 3;
+}
+
+message IndexResponse {
+  string workspace_id    = 1;
+  int32  entries_indexed = 2;
+  int32  entries_updated = 3;
+  int32  entries_deleted = 4;
+}
+
+message GetEntriesRequest {
+  string              workspace_id = 1;
+  codeio.core.FileRef file_ref     = 2;
+}
+
+message GetEntriesResponse {
+  repeated IndexEntry entries = 1;
+}
+
+message GetEntryRequest {
+  string entry_id = 1;
+}
+
+service ContextIndexService {
+  rpc IndexFiles  (IndexRequest)      returns (IndexResponse);
+  rpc GetEntries  (GetEntriesRequest) returns (GetEntriesResponse);
+  rpc GetEntry    (GetEntryRequest)   returns (IndexEntry);
+}

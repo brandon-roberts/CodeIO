@@ -1,0 +1,36 @@
+syntax = "proto3";
+package codeio.index;
+
+option java_package = "io.codeio.proto.index";
+option java_multiple_files = true;
+
+import "core/common.proto";
+import "google/protobuf/timestamp.proto";
+
+message ScanRequest {
+  string         workspace_id   = 1;
+  string         root_path      = 2;
+  repeated string include_globs = 3;
+  repeated string exclude_globs = 4;
+  bool            incremental   = 5;
+}
+
+message FileNode {
+  codeio.core.FileRef  file_ref     = 1;
+  bool                 is_directory = 2;
+  repeated FileNode    children     = 3;
+}
+
+message ScanResult {
+  string                    workspace_id      = 1;
+  FileNode                  root              = 2;
+  int32                     total_files       = 3;
+  int32                     total_directories = 4;
+  google.protobuf.Timestamp scanned_at        = 5;
+  repeated string           errors            = 6;
+}
+
+service WorkspaceScanService {
+  rpc Scan(ScanRequest)              returns (ScanResult);
+  rpc WatchWorkspace(ScanRequest)    returns (stream ScanResult);
+}
