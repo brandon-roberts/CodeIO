@@ -1,7 +1,7 @@
 # CodeIO Language Specification — v0 (draft)
 
 Status: 🚧 BUILDING. This spec drives the M2 interpreter. Every construct here lowers to the
-language-agnostic IR (§8), which is the same IR that foreign languages are lifted into (P6/P8).
+language-agnostic IR (§9), which is the same IR that foreign languages are lifted into (P6/P8).
 
 File extension: `.cio` · Encoding: UTF-8
 
@@ -153,14 +153,77 @@ type Config = { host: Str, port: Int }
   can ask "who calls me", "what changed", "generate a test for X" about itself.
 - `meta fn` executes at compile time in a sandboxed interpreter; its inputs and outputs are IR.
 
-## 7. Effects & live execution (P1)
+## 7. Bridges — protocol imports from host languages (P6/P8)
+
+CodeIO programs use the features, functions, and data structures of the underlying host
+languages through **bridges**: proto-defined capability libraries, declared in a separate
+bridge file, imported with explicit scope.
+
+### 9.1 Bridge files
+
+A bridge manifest (`*.bridge.cio`) declares a library generated from proto contracts:
+
+```cio
+// rust_index.bridge.cio
+bridge rust.index from proto "index/context_index.proto" {
+    service ContextIndexService @ env("CODEIO_INDEX_ADDR", ":50052")
+    expose  { IndexEntry, SymbolRecord, ChunkKind }        // data structures
+    expose  fn upsert, query, stats                        // functions
+}
+```
+
+- The bridge library (typed stubs, marshaling, docs) is **generated** from the proto — at
+  build time by default, or **at execution time** (`@lazy`) for bridges discovered in a
+  running system.
+- Generated bridges are content-addressed against the proto they came from.
+
+### 9.2 Scoped imports
+
+```cio
+use rust.index                          // full namespace: rust.index.query(...)
+use rust.index as idx                   // alias: idx.query(...)
+use rust.index.{query, IndexEntry}      // selective
+use python.ai.query as ai_query         // disambiguate same-named fns across bridges
+
+scope analytics {                       // context-local imports (Java/C++-style granularity)
+    use haskell.typecheck as tc
+    ...                                 // tc visible only inside this scope
+}
+```
+
+Name resolution is fully qualified under the hood; two bridges may expose `query` with no
+collision — ambiguity at a call site without qualification is a compile error with a fix-it.
+The IDE offers auto-import exactly as Java/C++ IDEs do, driven by the Spotlight index.
+
+### 9.3 Sync checking & rebuild
+
+Every generated bridge embeds the SHA-256 of its source proto. On program load (and
+continuously in the IDE):
+
+- hash matches → bridge is current, zero cost;
+- hash differs → **sync error**: the runtime reports `bridge rust.index is stale
+  (proto changed)` and, in dev mode, regenerates automatically; in enterprise/CI mode,
+  regeneration is an explicit `codeio bridge rebuild` so builds stay reproducible.
+
+`codeio bridge status` lists every bridge with current/stale flags — same flag discipline
+as features.toml.
+
+### 9.4 Real-time application to host layers
+
+A bridge call *is* a live gRPC dispatch into the host layer — so CodeIO code applies to the
+underlying languages in real time by construction: mutate a table and the Rust index service
+does the work now; call `haskell.typecheck.infer` and the Haskell process answers now. With
+M11 hot-swap, the reverse also holds: replacing a host service behind an unchanged proto is
+invisible to running CodeIO programs.
+
+## 8. Effects & live execution (P1)
 
 - Side effects are tracked coarsely in v0: functions are inferred `pure` or `effectful`
   (io, table-write, ai). Purity is what makes `cache: content` and live queries sound.
 - Hot swap contract (M11): a top-level definition may be replaced at runtime iff its type
   signature is unchanged; the VM migrates references atomically.
 
-## 8. The IR (the real program)
+## 9. The IR (the real program)
 
 Twelve node kinds (aligned with proto/frontend/ast.proto — to be reconciled in M2):
 
@@ -172,7 +235,7 @@ Twelve node kinds (aligned with proto/frontend/ast.proto — to be reconciled in
 - The IR, not the surface syntax, is what the IDE renders (2D node graph, 3D topology) and what
   the AI addresses. Surface syntax ↔ IR round-trips losslessly for native code.
 
-## 9. Open questions (resolve during M2)
+## 10. Open questions (resolve during M2)
 
 1. Row polymorphism vs. nominal records for table projections.
 2. `live` query semantics under transactions (snapshot vs. eventual).

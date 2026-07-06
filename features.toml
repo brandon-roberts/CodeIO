@@ -168,3 +168,27 @@ pillar = "P8"
 status = "planned"
 entry = "-"
 desc = "CodeIO's own polyglot source lifted into its IR; the system explores and reasons about itself."
+
+[[feature]]
+id = "bridge-system"
+name = "Bridge system: protocol imports + sync check"
+pillar = "P6/P8"
+status = "planned"
+entry = "docs/language-spec.md#7"
+desc = "Host-language capabilities as generated, content-addressed bridge libraries with scoped imports, exec-time generation, staleness detection, and codeio bridge rebuild."
+
+[[feature]]
+id = "arch-model"
+name = "Evolution architecture model (tiers + coherence plugins)"
+pillar = "P1/P8"
+status = "live"
+entry = "docs/architecture-model.md"
+desc = "L0/L1/L2 normalization; no lateral coupling; parts bound only by higher-tier coherence plugins."
+
+[[feature]]
+id = "gui-layers"
+name = "GUI layers over CLI and language"
+pillar = "P5"
+status = "planned"
+entry = "docs/architecture-model.md"
+desc = "GUI shells as L2 plugins over the same proto contracts as the CLI; .cio constructs render as live surfaces (power-forms, query views, ai cards)."
