@@ -77,6 +77,7 @@ impl SymbolIndexer {
         };
 
         let tokens = estimate_tokens(&raw_content);
+        let importance_score = compute_importance(&chunk_kind, &symbol);
 
         IndexEntry {
             id,
@@ -91,7 +92,7 @@ impl SymbolIndexer {
             content_hash,
             embedding_id: String::new(),
             tokens,
-            importance_score: compute_importance(&chunk_kind, &symbol),
+            importance_score,
             last_indexed: None,
             raw_content,
         }
@@ -214,7 +215,7 @@ fn compute_importance(chunk_kind: &ChunkKind, symbol: &Option<SymbolRecord>) -> 
 
     if let Some(sym) = symbol {
         if sym.visibility == Visibility::Public as i32 {
-            return (base + 0.1).min(1.0);
+            return (base + 0.1_f32).min(1.0);
         }
     }
     base

@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Vision Alignment
+
+**Read `VISION.md` first.** It is the canonical statement of the seven pillars (P1–P7). Every change must serve a pillar. Track progress in `ROADMAP.md` and update it in every PR.
+
 ## What This Project Is
 
 CodeIO is a polyglot meta-language and AI-integrated codebase management system. It consists of:
