@@ -60,6 +60,23 @@ config/
   codeio.toml   # Master config — service ports, token budgets, index settings
 ```
 
+## Main Entry Point
+
+The `codeio` binary (`services/crates/codeio-cli`) is the single entry point:
+
+```bash
+cd services && cargo run -p codeio-cli -- start      # launch all implemented services
+cd services && cargo run -p codeio-cli -- status     # health-check all service ports
+cd services && cargo run -p codeio-cli -- features   # feature registry with live/building/planned flags
+```
+
+## Documentation Workflow (feature flags)
+
+`features.toml` at the repo root is the SINGLE SOURCE OF TRUTH for feature status
+(live / building / planned). `FEATURES.md` is GENERATED — never edit it by hand.
+When a feature changes state: flip its `status` in `features.toml`, then run
+`python3 tools/scripts/gen_docs.py`, and commit both files together.
+
 ## Build Commands
 
 ```bash

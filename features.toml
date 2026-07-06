@@ -1,0 +1,170 @@
+# CodeIO Feature Registry — SINGLE SOURCE OF TRUTH for feature status.
+#
+# Statuses:
+#   live     = implemented, compiles, exercised end-to-end
+#   building = code exists, not yet working end-to-end
+#   planned  = design/theory only
+#
+# Workflow: when a feature changes state, flip `status` here, then run:
+#   python3 tools/scripts/gen_docs.py
+# which regenerates FEATURES.md. Never edit FEATURES.md by hand.
+
+[[feature]]
+id = "proto-contracts"
+name = "Proto3 cross-language contracts"
+pillar = "P1/P8"
+status = "live"
+entry = "proto/"
+desc = "All cross-layer APIs defined in Protocol Buffers; source of truth for every service."
+
+[[feature]]
+id = "rust-index"
+name = "Workspace indexer service"
+pillar = "P3"
+status = "building"
+entry = "services/crates/codeio-index"
+desc = "Scans workspaces into content-addressed IndexEntry chunks with symbol records. Compiles; needs tests + end-to-end exercise."
+
+[[feature]]
+id = "rust-spotlight"
+name = "Spotlight hybrid search"
+pillar = "P3/P4"
+status = "building"
+entry = "services/crates/codeio-spotlight"
+desc = "Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise."
+
+[[feature]]
+id = "rust-context"
+name = "Context window engine"
+pillar = "P4"
+status = "building"
+entry = "services/crates/codeio-context"
+desc = "Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here."
+
+[[feature]]
+id = "rust-depmap"
+name = "Dependency map service"
+pillar = "P1"
+status = "building"
+entry = "services/crates/codeio-depmap"
+desc = "Import/dependency graph resolver."
+
+[[feature]]
+id = "cli"
+name = "codeio CLI (main entry point)"
+pillar = "P1"
+status = "live"
+entry = "services/crates/codeio-cli"
+desc = "Single entry point: start services, check status, list features. `cargo run -p codeio-cli -- --help`"
+
+[[feature]]
+id = "python-ai"
+name = "Python AI layer"
+pillar = "P4"
+status = "building"
+entry = "ai/codeio"
+desc = "LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests."
+
+[[feature]]
+id = "language-spec"
+name = "Language spec v0 (M1)"
+pillar = "P2/P3/P4"
+status = "planned"
+entry = "docs/language-spec.md"
+desc = "Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms."
+
+[[feature]]
+id = "interpreter"
+name = "Minimal interpreter (M2)"
+pillar = "P1/P6"
+status = "planned"
+entry = "services/crates/codeio-lang"
+desc = "Lexer, parser, tree-walking interpreter; run .cio files."
+
+[[feature]]
+id = "ollama-backend"
+name = "Ollama inference backend (M3)"
+pillar = "P4"
+status = "planned"
+entry = "proto/ai/inference_backend.proto"
+desc = "Backend-agnostic inference service with Ollama as first-class local backend; content-hash caching."
+
+[[feature]]
+id = "ai-repl"
+name = "AI line-by-line mode (M4)"
+pillar = "P4"
+status = "planned"
+entry = "-"
+desc = "REPL where statements may be AI decisions/prompts/transforms, each with exact-fit context."
+
+[[feature]]
+id = "table-engine"
+name = "Table-native data engine (M5)"
+pillar = "P3"
+status = "planned"
+entry = "-"
+desc = "Typed schemas, relations, live queries, power-forms; wired into the Spotlight index."
+
+[[feature]]
+id = "ide-2d"
+name = "IDE shell 2D (M6)"
+pillar = "P5"
+status = "planned"
+entry = "-"
+desc = "Node/table/text views over the live index. TypeScript + WebGPU foundation."
+
+[[feature]]
+id = "ide-3d"
+name = "3D exploration (M7)"
+pillar = "P5"
+status = "planned"
+entry = "-"
+desc = "Navigable 3D dependency/topology space with live execution overlay."
+
+[[feature]]
+id = "lang-porting"
+name = "Language porting via tree-sitter (M8)"
+pillar = "P6"
+status = "planned"
+entry = "-"
+desc = "Detect languages in a system and lift them into the CodeIO IR."
+
+[[feature]]
+id = "p2p-mesh"
+name = "P2P AI landscape (M9-M10)"
+pillar = "P7"
+status = "planned"
+entry = "-"
+desc = "Device mesh: discovery, capability ads, remote-node Ollama dispatch; sharded inference experiments."
+
+[[feature]]
+id = "haskell-frontend"
+name = "Haskell parse/typecheck services"
+pillar = "P8"
+status = "planned"
+entry = "proto/frontend/"
+desc = "Lexer, parser, Hindley-Milner type inference as gRPC services."
+
+[[feature]]
+id = "cpp-vm"
+name = "C++ VM with hot swap (M11)"
+pillar = "P1"
+status = "planned"
+entry = "proto/vm/"
+desc = "Bytecode interpreter with live code swap + state inspection."
+
+[[feature]]
+id = "lisp-meta"
+name = "Lisp macro/DSL layer"
+pillar = "P2/P8"
+status = "planned"
+entry = "proto/meta/"
+desc = "Macro expansion, DSL framework, homoiconic quasi-quote services."
+
+[[feature]]
+id = "self-lift"
+name = "Semantic self-lift (M12)"
+pillar = "P8"
+status = "planned"
+entry = "-"
+desc = "CodeIO's own polyglot source lifted into its IR; the system explores and reasons about itself."

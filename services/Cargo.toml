@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/codeio-cli",
   "crates/codeio-common",
   "crates/codeio-index",
   "crates/codeio-spotlight",
