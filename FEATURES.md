@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-06 — 2 live · 5 building · 13 planned_
+_Regenerated 2026-07-06 — 2 live · 6 building · 12 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -11,13 +11,13 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **codeio CLI (main entry point)** | P1 | `services/crates/codeio-cli` | Single entry point: start services, check status, list features. `cargo run -p codeio-cli -- --help` |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
 | 🚧 BUILDING | **Dependency map service** | P1 | `services/crates/codeio-depmap` | Import/dependency graph resolver. |
+| 🚧 BUILDING | **Language spec v0 (M1)** | P2/P3/P4 | `docs/language-spec.md` | Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms. |
 | 🚧 BUILDING | **Workspace indexer service** | P3 | `services/crates/codeio-index` | Scans workspaces into content-addressed IndexEntry chunks with symbol records. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
 | 📋 PLANNED | **C++ VM with hot swap (M11)** | P1 | `proto/vm/` | Bytecode interpreter with live code swap + state inspection. |
 | 📋 PLANNED | **Minimal interpreter (M2)** | P1/P6 | `services/crates/codeio-lang` | Lexer, parser, tree-walking interpreter; run .cio files. |
-| 📋 PLANNED | **Language spec v0 (M1)** | P2/P3/P4 | `docs/language-spec.md` | Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms. |
 | 📋 PLANNED | **Lisp macro/DSL layer** | P2/P8 | `proto/meta/` | Macro expansion, DSL framework, homoiconic quasi-quote services. |
 | 📋 PLANNED | **Table-native data engine (M5)** | P3 | `—` | Typed schemas, relations, live queries, power-forms; wired into the Spotlight index. |
 | 📋 PLANNED | **Ollama inference backend (M3)** | P4 | `proto/ai/inference_backend.proto` | Backend-agnostic inference service with Ollama as first-class local backend; content-hash caching. |

@@ -12,11 +12,11 @@ See `VISION.md` for the why. This file tracks where we are. Update it in every P
 - [ ] CI pipeline (GitHub Actions: cargo build+test, ruff, mypy)
 
 ## M1 — Language Spec v0 (P3, P4)
-- [ ] Core syntax & semantics document (`docs/language-spec.md`)
-- [ ] Table declaration + relation syntax
-- [ ] Query expression syntax (statically checked against schemas)
-- [ ] `ai` primitive: call forms, typed/schema-constrained outputs, caching semantics
-- [ ] Inline metaprogramming forms (quote/unquote at IR level, self-query API)
+- [x] Core syntax & semantics document (`docs/language-spec.md`) — v0 draft
+- [x] Table declaration + relation syntax (spec §4)
+- [x] Query expression syntax (spec §4)
+- [x] `ai` primitive: call forms, typed outputs, caching (spec §5)
+- [x] Inline metaprogramming forms (spec §6) — open questions tracked in §9
 
 ## M2 — Minimal Interpreter (P1, P6)
 - [ ] `codeio-lang` crate: lexer, parser (consider folding Haskell layer into Rust — decision pending)
