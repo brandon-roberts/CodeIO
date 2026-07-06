@@ -54,6 +54,12 @@ See `VISION.md` for the why. This file tracks where we are. Update it in every P
 ## M11 — Live VM (P1)
 - [ ] Hot code swap, state inspection, live-edit round trip
 
+## M12 — Semantic Self-Lift (P8)
+- [ ] Lift CodeIO's own Rust layer into the CodeIO IR via the M8 porting pipeline
+- [ ] Lift Python, Haskell, Lisp, and remaining host layers
+- [ ] IDE explores CodeIO's own polyglot body in 2D/3D; AI answers questions about it via the index
+- [ ] Extract/validate universal-language abstraction layers from the lifted corpus
+
 ## Decision log
-- 2026-07-06: Proposed folding parsing/typechecking into Rust instead of Haskell for velocity and deployability. **Pending Brandon's sign-off.**
+- 2026-07-06: **DECIDED (Brandon):** Haskell frontend stays; the polyglot layer model is a feature, not a cost. Rust-consolidation proposal rejected. New pillar P8 (Polyglot Self-Composition) added. New layers (Kotlin/Swift/Go candidates) added only when a pillar demands them, each with protoc target + CI + health check in the same PR.
 - 2026-07-06: P7 primary mode is remote-node dispatch (realistic perf); sharding is capacity play, not speed play.

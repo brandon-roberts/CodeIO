@@ -62,6 +62,18 @@ AI compute is a network resource. Devices on the user's landscape (phones, lapto
 - **Central-coordinator mode:** one orchestrating model routes sub-tasks to specialist models across the mesh, aggregating results.
 - Discovery (mDNS/DHT), capability advertisement (VRAM, model list, tokens/sec), authenticated transport, and job scheduling are all proto-defined services in the existing gRPC fabric.
 
+### P8 — Polyglot Self-Composition
+CodeIO is itself composed of many host languages, deliberately, and unifies them with its own machinery. The system is the first proof of the universal-language claim.
+
+Two unification planes:
+
+- **Runtime plane (exists today):** every layer speaks through proto-defined gRPC contracts. Adding a language layer = adding a protoc target + a service implementation. No layer knows or cares what language its peers are written in.
+- **Semantic plane (the ambition):** every host layer's *own source code* is lifted into the CodeIO IR via the porting pipeline (P6 turned inward). Once lifted, the Rust indexer, Haskell parser, Lisp macro engine, and every other layer become indexable, queryable, 3D-explorable, and AI-addressable through the same machinery they implement. The abstraction layers of the universal language are then not designed on a whiteboard — they are *extracted* from a working multi-language system that already exercises them.
+
+Layer assignments follow one rule: each language owns the layer it is genuinely best at. The Haskell frontend stays (types and parsing are its home turf). New layers are added when a pillar demands a language's strengths — e.g., Kotlin for the Android thin client (P7), Swift for iOS, Go for the P2P mesh networking — never for variety's sake.
+
+Cost discipline: every layer added must ship with its protoc target, CI job, and health check in the same PR. A layer without CI is a liability, not a paradigm.
+
 ---
 
 ## Non-negotiable engineering disciplines
@@ -76,7 +88,7 @@ AI compute is a network resource. Devices on the user's landscape (phones, lapto
 
 ## How the pillars interlock
 
-P3 (tables) + P2 (self-analysis) feed P4 (exact-fit AI context). P4 + P7 make AI ubiquitous and cheap. P1 (live layers) + P5 (rendered exploration) make the whole thing visible and touchable. P6 makes it apply to every codebase, not just CodeIO-native ones. The content-addressed index is the spine connecting all of it.
+P3 (tables) + P2 (self-analysis) feed P4 (exact-fit AI context). P4 + P7 make AI ubiquitous and cheap. P1 (live layers) + P5 (rendered exploration) make the whole thing visible and touchable. P6 makes it apply to every codebase, not just CodeIO-native ones. P8 turns P6 inward: CodeIO's own polyglot body is the permanent test bed for the universal language's abstraction layers. The content-addressed index is the spine connecting all of it.
 
 ---
 
