@@ -1,0 +1,55 @@
+syntax = "proto3";
+package codeio.p2p;
+
+// P7 transport — nested block streaming for compute delegation ("FrostWire for compute").
+// Design goals:
+//  - Context declared ONCE per stream; subsequent frames reference it by id (no redundancy).
+//  - HEADER / BODY / CLOSER framing; BODY may nest child frames to multiplex sub-streams.
+//  - Bidirectional: server dispatches work to devices AND devices stream results back.
+//  - Device dials OUT to the coordinator (carrier-NAT reality); coordinator pushes over that pipe.
+
+service BlockStream {
+  // A device opens ONE long-lived outbound stream. Work flows down, results flow up,
+  // multiplexed by stream_id. This is the pipe that survives carrier NAT.
+  rpc Connect(stream Frame) returns (stream Frame);
+}
+
+message Frame {
+  oneof frame {
+    Header header = 1;   // opens a logical stream; establishes context once
+    Body   body   = 2;   // payload block(s); references context by stream_id
+    Closer closer = 3;   // ends a logical stream; carries status + integrity
+  }
+}
+
+// HEADER — sent once per logical stream. Establishes all context so BODY frames stay lean.
+message Header {
+  string stream_id = 1;      // unique per logical stream on this connection
+  string parent_id = 2;      // non-empty => this stream is NESTED under parent (sub-stream)
+  string job_kind = 3;       // "ollama.generate" | "cmd" | "compute" | "index" | ...
+  string target = 4;         // model name, command, or capability id
+  map<string, string> ctx = 5;  // one-time context (params, options) — never repeated in BODY
+  Direction direction = 6;   // DISPATCH (coordinator->device) or RESULT (device->coordinator)
+  string encoding = 7;       // "utf8" | "cbor" | "raw" | "tensor-f16" ...
+}
+
+enum Direction { DISPATCH = 0; RESULT = 1; }
+
+// BODY — lean: only stream_id + payload. Context already known from HEADER.
+// A body may itself carry child frames (nested multiplexing) when that reduces overhead.
+message Body {
+  string stream_id = 1;
+  int64  seq = 2;            // ordering within the stream
+  bytes  payload = 3;        // e.g. a token chunk, a command's stdout block, a tensor slice
+  repeated Frame nested = 4; // optional: child frames tunneled inside this body
+}
+
+// CLOSER — ends the stream, carries integrity + outcome. No redundant re-send of context.
+message Closer {
+  string stream_id = 1;
+  Status status = 2;
+  string checksum = 3;       // integrity over the concatenated payload
+  int64  total_blocks = 4;
+  string error = 5;
+}
+enum Status { OK = 0; ERROR = 1; CANCELLED = 2; }

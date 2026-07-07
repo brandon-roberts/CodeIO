@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-07 — 5 live · 8 building · 21 planned_
+_Regenerated 2026-07-07 — 5 live · 9 building · 21 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -20,6 +20,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
 | 🚧 BUILDING | **P7 mesh contract (node model, capacity, transport, block streaming)** | P7 | `proto/p2p/mesh.proto` | Proto for local-first resource mesh: measured Capacity, LAN/Bluetooth/Direct/Internet transport preference, streamed WorkBlocks, aggregate MeshSummary ('LN as one big node'). |
+| 🚧 BUILDING | **Block-stream transport (nested header/body/closer, context-once)** | P7 | `proto/p2p/blockstream.proto` | FrostWire-for-compute transport: one long-lived outbound device stream multiplexed by stream_id; HEADER declares context once, lean BODY blocks, nested sub-streams, CLOSER integrity; bidirectional dispatch/result over carrier NAT. |
 | 🚧 BUILDING | **Architecture Authority (conformance refs + escalation)** | P9 | `VISION.md` | Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands. |
 | 📋 PLANNED | **C++ VM with hot swap (M11)** | P1 | `proto/vm/` | Bytecode interpreter with live code swap + state inspection. |
 | 📋 PLANNED | **codeio serve (application server mode)** | P1/P7 | `—` | Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams. |

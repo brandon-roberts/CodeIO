@@ -280,3 +280,11 @@ pillar = "P7"
 status = "planned"
 entry = "services/crates/codeio-cli"
 desc = "Short local benchmark producing real tokens/sec and link throughput into Capacity; aggregate mesh numbers computed from measurements, never spec sheets."
+
+[[feature]]
+id = "blockstream"
+name = "Block-stream transport (nested header/body/closer, context-once)"
+pillar = "P7"
+status = "building"
+entry = "proto/p2p/blockstream.proto"
+desc = "FrostWire-for-compute transport: one long-lived outbound device stream multiplexed by stream_id; HEADER declares context once, lean BODY blocks, nested sub-streams, CLOSER integrity; bidirectional dispatch/result over carrier NAT."

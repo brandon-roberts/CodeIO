@@ -57,3 +57,35 @@ desktop talks to it directly; the internet is used only when no local path exist
 Every capability advertised in the UI must be *measured* on the actual mesh before it is claimed.
 Aggregate numbers are computed from benchmarks, never from spec sheets. (Same receipts-over-vibes
 rule as the Trust Ledger and Architecture Authority.)
+
+## Coordinator + worker inversion ("FrostWire for compute")
+Two dispatch directions coexist on the same mesh:
+1. **Server-as-coordinator, devices-as-workers:** AWS/Linux server holds the job queue and pushes
+   work out to the device fleet; devices execute and stream results back. The server is also a
+   *participating node* (it can run Ollama itself), so it's coordinator + worker, not just a router.
+2. **Device-as-coordinator, peers-as-workers:** the earlier remote-node model — a phone dispatches
+   to the strongest LAN peer. Same protocol, roles swapped.
+
+Both use `blockstream.proto`. The design principle is P2P resource sharing for compute: every
+online device is a building block; the coordinator matches work to capacity and prefers local
+transport, reaching over the internet only when needed.
+
+### The carrier-NAT rule (baked into the protocol)
+A device cannot be freely dialed into over the internet (carrier NAT/firewalls). So the **device
+opens one long-lived outbound stream** to the coordinator (`BlockStream.Connect`); the coordinator
+pushes DISPATCH frames down that existing pipe and receives RESULT frames up it. This is why the
+protocol is a single bidirectional stream multiplexed by `stream_id`, not per-job inbound calls.
+
+### Efficiency: context-once, nested multiplexing
+- HEADER declares context (model, params, encoding) exactly once per logical stream.
+- BODY frames carry only `stream_id + seq + payload` — no re-sent context.
+- CLOSER carries integrity (checksum) + outcome.
+- A BODY may tunnel child Frames (`nested`) to multiplex many sub-streams over one pipe without
+  new connections — e.g. one job fanning to several models, or a command emitting stdout+stderr
+  as nested sub-streams.
+
+### iOS/Android reality (unchanged, restated for this model)
+- **Android:** can hold the outbound worker stream in background within OS policy — a capable worker.
+- **iOS:** holds the stream reliably only in-foreground (or brief push-woken windows); strong
+  worker while active, not a persistent headless one. Coordinator treats iOS capacity as
+  intermittent and schedules accordingly.
