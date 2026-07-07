@@ -19,3 +19,11 @@ while i <= 100 {
     i = i + 1
 }
 print("sum 1..100 =", total)
+
+// lists + for
+var squares = []
+for n in range(1, 6) {
+    push(squares, n * n)
+}
+print("squares:", squares)
+print("third:", squares[2])

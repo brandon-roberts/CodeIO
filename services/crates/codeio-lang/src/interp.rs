@@ -15,6 +15,7 @@ pub enum Value {
     Bool(bool),
     Nil,
     Fn(Rc<FnDef>),
+    List(Rc<RefCell<Vec<Value>>>),
     Builtin(&'static str, fn(&[Value]) -> Result<Value, String>),
 }
 
@@ -34,6 +35,10 @@ impl fmt::Display for Value {
             Value::Bool(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
             Value::Fn(d) => write!(f, "<fn {}>", d.name),
+            Value::List(items) => {
+                let inner: Vec<String> = items.borrow().iter().map(|v| v.to_string()).collect();
+                write!(f, "[{}]", inner.join(", "))
+            }
             Value::Builtin(n, _) => write!(f, "<builtin {n}>"),
         }
     }
@@ -56,6 +61,8 @@ impl Env {
         vars.insert("abs".into(), b("abs", builtin_abs));
         vars.insert("min".into(), b("min", builtin_min));
         vars.insert("max".into(), b("max", builtin_max));
+        vars.insert("range".into(), b("range", builtin_range));
+        vars.insert("push".into(), b("push", builtin_push));
         Rc::new(RefCell::new(Env { vars, parent: None }))
     }
     pub fn child(parent: &EnvRef) -> EnvRef {
@@ -94,7 +101,25 @@ fn builtin_print(args: &[Value]) -> Result<Value, String> {
 fn builtin_len(args: &[Value]) -> Result<Value, String> {
     match args {
         [Value::Str(s)] => Ok(Value::Int(s.chars().count() as i64)),
-        _ => Err("len expects one string".into()),
+        [Value::List(l)] => Ok(Value::Int(l.borrow().len() as i64)),
+        _ => Err("len expects one string or list".into()),
+    }
+}
+fn builtin_range(args: &[Value]) -> Result<Value, String> {
+    match args {
+        [Value::Int(a), Value::Int(b)] => Ok(Value::List(Rc::new(RefCell::new(
+            (*a..*b).map(Value::Int).collect(),
+        )))),
+        _ => Err("range expects two ints (start, end-exclusive)".into()),
+    }
+}
+fn builtin_push(args: &[Value]) -> Result<Value, String> {
+    match args {
+        [Value::List(l), v] => {
+            l.borrow_mut().push(v.clone());
+            Ok(Value::List(l.clone()))
+        }
+        _ => Err("push expects (list, value)".into()),
     }
 }
 fn builtin_str(args: &[Value]) -> Result<Value, String> {
@@ -182,6 +207,21 @@ impl Interp {
                     env: env.clone(),
                 };
                 env.borrow_mut().define(name.clone(), Value::Fn(Rc::new(def)), false);
+                Flow::Normal(Value::Nil)
+            }
+            Stmt::For(name, iter, body) => {
+                let it = Self::eval(iter, env)?;
+                let Value::List(items) = it else {
+                    return Err(format!("for expects a list, found {it}"));
+                };
+                let snapshot: Vec<Value> = items.borrow().clone();
+                for v in snapshot {
+                    let child = Env::child(env);
+                    child.borrow_mut().define(name.clone(), v, false);
+                    if let Flow::Return(rv) = Self::exec_block(body, &child)? {
+                        return Ok(Flow::Return(rv));
+                    }
+                }
                 Flow::Normal(Value::Nil)
             }
             Stmt::While(cond, body) => {
@@ -294,6 +334,28 @@ impl Interp {
                     }
                 } else {
                     Value::Nil
+                }
+            }
+            Expr::List(items) => {
+                let mut out = Vec::with_capacity(items.len());
+                for e in items {
+                    out.push(Self::eval(e, env)?);
+                }
+                Value::List(Rc::new(RefCell::new(out)))
+            }
+            Expr::Index(target, idx) => {
+                let t = Self::eval(target, env)?;
+                let i = Self::eval(idx, env)?;
+                match (t, i) {
+                    (Value::List(l), Value::Int(n)) => {
+                        let l = l.borrow();
+                        let len = l.len() as i64;
+                        let n = if n < 0 { len + n } else { n };
+                        l.get(n as usize)
+                            .cloned()
+                            .ok_or_else(|| format!("index {n} out of bounds (len {len})"))?
+                    }
+                    (t, i) => return Err(format!("cannot index {t} with {i}")),
                 }
             }
             Expr::Block(stmts) => match Self::exec_block(stmts, &Env::child(env))? {

@@ -92,6 +92,19 @@ mod tests {
     }
 
     #[test]
+    fn lists_and_for() {
+        assert_eq!(eval("[1, 2, 3]"), "[1, 2, 3]");
+        assert_eq!(eval("let l = [10, 20, 30] l[1]"), "20");
+        assert_eq!(eval("let l = [1, 2] l[-1]"), "2");
+        assert_eq!(eval("len([1, 2, 3, 4])"), "4");
+        assert_eq!(eval("range(0, 4)"), "[0, 1, 2, 3]");
+        assert_eq!(eval("var s = 0 for x in range(1, 11) { s = s + x } s"), "55");
+        assert_eq!(eval("var l = [] for x in range(0, 3) { push(l, x * x) } l"), "[0, 1, 4]");
+        assert!(eval("[1][5]").starts_with("ERR"));
+        assert!(eval("for x in 3 { x }").starts_with("ERR"));
+    }
+
+    #[test]
     fn runtime_errors() {
         assert!(eval("1 / 0").starts_with("ERR"));
         assert!(eval("fn f(a) { a } f(1, 2)").starts_with("ERR"));

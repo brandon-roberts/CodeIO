@@ -13,6 +13,8 @@ pub enum Expr {
     Unary(Tok, Box<Expr>),
     Binary(Tok, Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
+    List(Vec<Expr>),
+    Index(Box<Expr>, Box<Expr>),
     If(Box<Expr>, Vec<Stmt>, Option<Vec<Stmt>>),
     Block(Vec<Stmt>),
 }
@@ -24,6 +26,7 @@ pub enum Stmt {
     Assign(String, Expr),
     Fn(String, Vec<String>, Vec<Stmt>),
     While(Expr, Vec<Stmt>),
+    For(String, Expr, Vec<Stmt>),
     Return(Option<Expr>),
     Expr(Expr),
 }
@@ -122,6 +125,14 @@ impl Parser {
                 let body = self.parse_block()?;
                 Ok(Stmt::While(cond, body))
             }
+            Tok::For => {
+                self.bump();
+                let name = self.ident()?;
+                self.expect(Tok::In)?;
+                let iter = self.parse_expr(0)?;
+                let body = self.parse_block()?;
+                Ok(Stmt::For(name, iter, body))
+            }
             Tok::Return => {
                 self.bump();
                 if matches!(self.peek(), Tok::RBrace | Tok::Eof) {
@@ -170,6 +181,17 @@ impl Parser {
                 self.expect(Tok::RParen)?;
                 Ok(e)
             }
+            Tok::LBracket => {
+                let mut items = Vec::new();
+                while *self.peek() != Tok::RBracket {
+                    items.push(self.parse_expr(0)?);
+                    if *self.peek() == Tok::Comma {
+                        self.bump();
+                    }
+                }
+                self.expect(Tok::RBracket)?;
+                Ok(Expr::List(items))
+            }
             Tok::If => {
                 let cond = self.parse_expr(0)?;
                 let then = self.parse_block()?;
@@ -212,18 +234,27 @@ impl Parser {
     pub fn parse_expr(&mut self, min_bp: u8) -> Result<Expr, String> {
         let mut lhs = self.prefix()?;
         loop {
-            // call postfix
-            while *self.peek() == Tok::LParen {
-                self.bump();
-                let mut args = Vec::new();
-                while *self.peek() != Tok::RParen {
-                    args.push(self.parse_expr(0)?);
-                    if *self.peek() == Tok::Comma {
-                        self.bump();
+            // call / index postfix
+            loop {
+                if *self.peek() == Tok::LParen {
+                    self.bump();
+                    let mut args = Vec::new();
+                    while *self.peek() != Tok::RParen {
+                        args.push(self.parse_expr(0)?);
+                        if *self.peek() == Tok::Comma {
+                            self.bump();
+                        }
                     }
+                    self.expect(Tok::RParen)?;
+                    lhs = Expr::Call(Box::new(lhs), args);
+                } else if *self.peek() == Tok::LBracket {
+                    self.bump();
+                    let idx = self.parse_expr(0)?;
+                    self.expect(Tok::RBracket)?;
+                    lhs = Expr::Index(Box::new(lhs), Box::new(idx));
+                } else {
+                    break;
                 }
-                self.expect(Tok::RParen)?;
-                lhs = Expr::Call(Box::new(lhs), args);
             }
             let op = self.peek().clone();
             let Some((lbp, rbp)) = Self::infix_bp(&op) else { break };

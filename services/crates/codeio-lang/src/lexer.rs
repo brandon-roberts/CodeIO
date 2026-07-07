@@ -7,9 +7,9 @@ pub enum Tok {
     Str(String),
     Ident(String),
     // keywords
-    Let, Var, Fn, If, Else, While, Return, True, False, Nil,
+    Let, Var, Fn, If, Else, While, For, In, Return, True, False, Nil,
     // symbols
-    LParen, RParen, LBrace, RBrace, Comma, Colon, Arrow, Pipe,
+    LParen, RParen, LBrace, RBrace, LBracket, RBracket, Comma, Colon, Arrow, Pipe,
     Plus, Minus, Star, Slash, Percent,
     Eq, EqEq, NotEq, Lt, Le, Gt, Ge, Bang, AndAnd, OrOr,
     Eof,
@@ -82,6 +82,8 @@ impl<'a> Lexer<'a> {
             b')' => { self.bump(); Tok::RParen }
             b'{' => { self.bump(); Tok::LBrace }
             b'}' => { self.bump(); Tok::RBrace }
+            b'[' => { self.bump(); Tok::LBracket }
+            b']' => { self.bump(); Tok::RBracket }
             b',' => { self.bump(); Tok::Comma }
             b':' => { self.bump(); Tok::Colon }
             b'+' => { self.bump(); Tok::Plus }
@@ -171,6 +173,8 @@ impl<'a> Lexer<'a> {
                     "if" => Tok::If,
                     "else" => Tok::Else,
                     "while" => Tok::While,
+                    "for" => Tok::For,
+                    "in" => Tok::In,
                     "return" => Tok::Return,
                     "true" => Tok::True,
                     "false" => Tok::False,
