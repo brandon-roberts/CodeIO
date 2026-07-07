@@ -1,0 +1,24 @@
+// P3 first light: schema-checked tables + queries in the live engine
+
+table Trades {
+    symbol: Str,
+    qty: Int,
+    price: Float,
+    is_buy: Bool
+}
+
+insert Trades { symbol: "AAPL", qty: 10, price: 212.5, is_buy: true }
+insert Trades { symbol: "BTC",  qty: 1,  price: 67000.0, is_buy: true }
+insert Trades { symbol: "AAPL", qty: 4,  price: 215.0, is_buy: false }
+
+print("all trades:", len(from t in Trades))
+
+let buys = from t in Trades where t.is_buy select t.symbol
+print("buys:", buys)
+
+let notional = from t in Trades select t.qty * t.price
+print("notionals:", notional)
+
+var total = 0.0
+for n in notional { total = total + n }
+print("total notional:", total)

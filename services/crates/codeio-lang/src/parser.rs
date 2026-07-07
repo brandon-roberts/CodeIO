@@ -14,6 +14,9 @@ pub enum Expr {
     Binary(Tok, Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     List(Vec<Expr>),
+    Record(Vec<(String, Expr)>),
+    Field(Box<Expr>, String),
+    Query { var: String, source: String, filter: Option<Box<Expr>>, select: Option<Box<Expr>> },
     Index(Box<Expr>, Box<Expr>),
     If(Box<Expr>, Vec<Stmt>, Option<Vec<Stmt>>),
     Block(Vec<Stmt>),
@@ -27,6 +30,8 @@ pub enum Stmt {
     Fn(String, Vec<String>, Vec<Stmt>),
     While(Expr, Vec<Stmt>),
     For(String, Expr, Vec<Stmt>),
+    Table(String, Vec<(String, String)>),
+    Insert(String, Expr),
     Return(Option<Expr>),
     Expr(Expr),
 }
@@ -125,6 +130,29 @@ impl Parser {
                 let body = self.parse_block()?;
                 Ok(Stmt::While(cond, body))
             }
+            Tok::Table => {
+                self.bump();
+                let name = self.ident()?;
+                self.expect(Tok::LBrace)?;
+                let mut cols = Vec::new();
+                while *self.peek() != Tok::RBrace {
+                    let col = self.ident()?;
+                    self.expect(Tok::Colon)?;
+                    let ty = self.ident()?;
+                    cols.push((col, ty));
+                    if *self.peek() == Tok::Comma {
+                        self.bump();
+                    }
+                }
+                self.expect(Tok::RBrace)?;
+                Ok(Stmt::Table(name, cols))
+            }
+            Tok::Insert => {
+                self.bump();
+                let name = self.ident()?;
+                let rec = self.parse_expr(0)?;
+                Ok(Stmt::Insert(name, rec))
+            }
             Tok::For => {
                 self.bump();
                 let name = self.ident()?;
@@ -210,9 +238,45 @@ impl Parser {
                 Ok(Expr::If(Box::new(cond), then, els))
             }
             Tok::LBrace => {
-                // block expression: rewind one and use parse_block
-                self.pos -= 1;
-                Ok(Expr::Block(self.parse_block()?))
+                // record if `{}` or `{ ident :` — otherwise block expression
+                let is_record = *self.peek() == Tok::RBrace
+                    || (matches!(self.peek(), Tok::Ident(_))
+                        && self.toks.get(self.pos + 1).map(|t| &t.0) == Some(&Tok::Colon));
+                if is_record {
+                    let mut fields = Vec::new();
+                    while *self.peek() != Tok::RBrace {
+                        let name = self.ident()?;
+                        self.expect(Tok::Colon)?;
+                        let val = self.parse_expr(0)?;
+                        fields.push((name, val));
+                        if *self.peek() == Tok::Comma {
+                            self.bump();
+                        }
+                    }
+                    self.expect(Tok::RBrace)?;
+                    Ok(Expr::Record(fields))
+                } else {
+                    self.pos -= 1;
+                    Ok(Expr::Block(self.parse_block()?))
+                }
+            }
+            Tok::From => {
+                let var = self.ident()?;
+                self.expect(Tok::In)?;
+                let source = self.ident()?;
+                let filter = if *self.peek() == Tok::Where {
+                    self.bump();
+                    Some(Box::new(self.parse_expr(0)?))
+                } else {
+                    None
+                };
+                let select = if *self.peek() == Tok::Select {
+                    self.bump();
+                    Some(Box::new(self.parse_expr(0)?))
+                } else {
+                    None
+                };
+                Ok(Expr::Query { var, source, filter, select })
             }
             t => Err(format!("line {}: unexpected token {:?}", self.line(), t)),
         }
@@ -247,6 +311,10 @@ impl Parser {
                     }
                     self.expect(Tok::RParen)?;
                     lhs = Expr::Call(Box::new(lhs), args);
+                } else if *self.peek() == Tok::Dot {
+                    self.bump();
+                    let field = self.ident()?;
+                    lhs = Expr::Field(Box::new(lhs), field);
                 } else if *self.peek() == Tok::LBracket {
                     self.bump();
                     let idx = self.parse_expr(0)?;

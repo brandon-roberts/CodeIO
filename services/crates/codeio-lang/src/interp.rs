@@ -16,7 +16,15 @@ pub enum Value {
     Nil,
     Fn(Rc<FnDef>),
     List(Rc<RefCell<Vec<Value>>>),
+    Record(Rc<RefCell<HashMap<String, Value>>>),
+    Table(Rc<RefCell<TableData>>),
     Builtin(&'static str, fn(&[Value]) -> Result<Value, String>),
+}
+
+pub struct TableData {
+    pub name: String,
+    pub cols: Vec<(String, String)>,
+    pub rows: Vec<HashMap<String, Value>>,
 }
 
 pub struct FnDef {
@@ -35,6 +43,17 @@ impl fmt::Display for Value {
             Value::Bool(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
             Value::Fn(d) => write!(f, "<fn {}>", d.name),
+            Value::Record(fields) => {
+                let f2 = fields.borrow();
+                let mut keys: Vec<&String> = f2.keys().collect();
+                keys.sort();
+                let inner: Vec<String> = keys.iter().map(|k| format!("{k}: {}", f2[*k])).collect();
+                write!(f, "{{ {} }}", inner.join(", "))
+            }
+            Value::Table(t) => {
+                let t = t.borrow();
+                write!(f, "<table {} ({} rows)>", t.name, t.rows.len())
+            }
             Value::List(items) => {
                 let inner: Vec<String> = items.borrow().iter().map(|v| v.to_string()).collect();
                 write!(f, "[{}]", inner.join(", "))
@@ -209,6 +228,43 @@ impl Interp {
                 env.borrow_mut().define(name.clone(), Value::Fn(Rc::new(def)), false);
                 Flow::Normal(Value::Nil)
             }
+            Stmt::Table(name, cols) => {
+                let data = TableData { name: name.clone(), cols: cols.clone(), rows: Vec::new() };
+                env.borrow_mut().define(name.clone(), Value::Table(Rc::new(RefCell::new(data))), false);
+                Flow::Normal(Value::Nil)
+            }
+            Stmt::Insert(name, rec_expr) => {
+                let table = env
+                    .borrow()
+                    .get(name)
+                    .ok_or_else(|| format!("undefined table '{name}'"))?;
+                let Value::Table(t) = table else {
+                    return Err(format!("'{name}' is not a table"));
+                };
+                let rec = Self::eval(rec_expr, env)?;
+                let Value::Record(fields) = rec else {
+                    return Err(format!("insert expects a record, found {rec}"));
+                };
+                let fields = fields.borrow();
+                let mut row = HashMap::new();
+                {
+                    let t = t.borrow();
+                    for (col, ty) in &t.cols {
+                        let v = fields
+                            .get(col)
+                            .ok_or_else(|| format!("insert into {name}: missing column '{col}'"))?;
+                        check_type(v, ty).map_err(|e| format!("insert into {name}.{col}: {e}"))?;
+                        row.insert(col.clone(), v.clone());
+                    }
+                    for k in fields.keys() {
+                        if !t.cols.iter().any(|(c, _)| c == k) {
+                            return Err(format!("insert into {name}: unknown column '{k}'"));
+                        }
+                    }
+                }
+                t.borrow_mut().rows.push(row);
+                Flow::Normal(Value::Nil)
+            }
             Stmt::For(name, iter, body) => {
                 let it = Self::eval(iter, env)?;
                 let Value::List(items) = it else {
@@ -358,11 +414,68 @@ impl Interp {
                     (t, i) => return Err(format!("cannot index {t} with {i}")),
                 }
             }
+            Expr::Record(fields) => {
+                let mut map = HashMap::new();
+                for (k, e) in fields {
+                    map.insert(k.clone(), Self::eval(e, env)?);
+                }
+                Value::Record(Rc::new(RefCell::new(map)))
+            }
+            Expr::Field(target, field) => {
+                let t = Self::eval(target, env)?;
+                match t {
+                    Value::Record(f) => f
+                        .borrow()
+                        .get(field)
+                        .cloned()
+                        .ok_or_else(|| format!("record has no field '{field}'"))?,
+                    other => return Err(format!("cannot access field '{field}' on {other}")),
+                }
+            }
+            Expr::Query { var, source, filter, select } => {
+                let src = env
+                    .borrow()
+                    .get(source)
+                    .ok_or_else(|| format!("undefined table '{source}'"))?;
+                let Value::Table(t) = src else {
+                    return Err(format!("'{source}' is not a table"));
+                };
+                let rows: Vec<HashMap<String, Value>> = t.borrow().rows.clone();
+                let mut out = Vec::new();
+                for row in rows {
+                    let child = Env::child(env);
+                    let rec = Value::Record(Rc::new(RefCell::new(row)));
+                    child.borrow_mut().define(var.clone(), rec.clone(), false);
+                    if let Some(f) = filter {
+                        if !truthy(&Self::eval(f, &child)?) {
+                            continue;
+                        }
+                    }
+                    let item = match select {
+                        Some(s) => Self::eval(s, &child)?,
+                        None => rec,
+                    };
+                    out.push(item);
+                }
+                Value::List(Rc::new(RefCell::new(out)))
+            }
             Expr::Block(stmts) => match Self::exec_block(stmts, &Env::child(env))? {
                 Flow::Normal(v) | Flow::Return(v) => v,
             },
         })
     }
+}
+
+fn check_type(v: &Value, ty: &str) -> Result<(), String> {
+    let ok = matches!(
+        (v, ty),
+        (Value::Int(_), "Int")
+            | (Value::Float(_), "Float")
+            | (Value::Int(_), "Float")
+            | (Value::Str(_), "Str")
+            | (Value::Bool(_), "Bool")
+    ) || ty == "Any";
+    if ok { Ok(()) } else { Err(format!("expected {ty}, found {v}")) }
 }
 
 fn truthy(v: &Value) -> bool {

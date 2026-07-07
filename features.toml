@@ -207,7 +207,7 @@ name = "Physical canvas (sketch->IR, spatial coords, glyph notation)"
 pillar = "P9"
 status = "planned"
 entry = "VISION.md"
-desc = "Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; hand-drawable algorithm glyphs as an IR projection."
+desc = "Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; glyph notation as IR projection; continuous canvas-watch (mounted/phone camera, change-detected regions, proposed IR diffs)."
 
 [[feature]]
 id = "arch-authority"

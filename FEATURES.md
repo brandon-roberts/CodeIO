@@ -35,6 +35,6 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 📋 PLANNED | **P2P AI landscape (M9-M10)** | P7 | `—` | Device mesh: discovery, capability ads, remote-node Ollama dispatch; sharded inference experiments. |
 | 📋 PLANNED | **Haskell parse/typecheck services** | P8 | `proto/frontend/` | Lexer, parser, Hindley-Milner type inference as gRPC services. |
 | 📋 PLANNED | **Semantic self-lift (M12)** | P8 | `—` | CodeIO's own polyglot source lifted into its IR; the system explores and reasons about itself. |
-| 📋 PLANNED | **Physical canvas (sketch->IR, spatial coords, glyph notation)** | P9 | `VISION.md` | Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; hand-drawable algorithm glyphs as an IR projection. |
+| 📋 PLANNED | **Physical canvas (sketch->IR, spatial coords, glyph notation)** | P9 | `VISION.md` | Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; glyph notation as IR projection; continuous canvas-watch (mounted/phone camera, change-detected regions, proposed IR diffs). |
 
 See `VISION.md` for the pillars and `ROADMAP.md` for milestone tracking.

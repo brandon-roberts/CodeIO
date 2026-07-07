@@ -105,6 +105,33 @@ mod tests {
     }
 
     #[test]
+    fn records() {
+        assert_eq!(eval("let p = { x: 3, y: 4 } p.x + p.y"), "7");
+        assert_eq!(eval("{ b: 2, a: 1 }"), "{ a: 1, b: 2 }");
+        assert!(eval("let p = { x: 1 } p.z").starts_with("ERR"));
+    }
+
+    #[test]
+    fn tables_and_queries() {
+        let src = r#"
+            table Users { name: Str, age: Int }
+            insert Users { name: "Ada", age: 36 }
+            insert Users { name: "Alan", age: 41 }
+            insert Users { name: "Grace", age: 85 }
+            from u in Users where u.age > 40 select u.name
+        "#;
+        assert_eq!(eval(src), "[Alan, Grace]");
+        assert_eq!(
+            eval(r#"table T { n: Int } insert T { n: 1 } insert T { n: 2 } len(from r in T)"#),
+            "2"
+        );
+        // schema enforcement
+        assert!(eval(r#"table T { n: Int } insert T { n: "no" }"#).starts_with("ERR"));
+        assert!(eval(r#"table T { n: Int } insert T { m: 1 }"#).starts_with("ERR"));
+        assert!(eval(r#"table T { n: Int } insert T { n: 1, extra: 2 }"#).starts_with("ERR"));
+    }
+
+    #[test]
     fn runtime_errors() {
         assert!(eval("1 / 0").starts_with("ERR"));
         assert!(eval("fn f(a) { a } f(1, 2)").starts_with("ERR"));
