@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-06 — 3 live · 6 building · 14 planned_
+_Regenerated 2026-07-07 — 3 live · 6 building · 15 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -27,6 +27,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 📋 PLANNED | **3D exploration (M7)** | P5 | `—` | Navigable 3D dependency/topology space with live execution overlay. |
 | 📋 PLANNED | **GUI layers over CLI and language** | P5 | `docs/architecture-model.md` | GUI shells as L2 plugins over the same proto contracts as the CLI; .cio constructs render as live surfaces (power-forms, query views, ai cards). |
 | 📋 PLANNED | **Language porting via tree-sitter (M8)** | P6 | `—` | Detect languages in a system and lift them into the CodeIO IR. |
+| 📋 PLANNED | **magic.coinos bridge (finance engine)** | P6 | `https://github.com/brandon-roberts/CoinOS/tree/main/proto/coinos` | CodeIO consumes CoinOS (MAGIC finance engine) via bridge: BrokerBridge multi-venue trading, DecisionLedger, Treasury self-billing with budget guards. |
 | 📋 PLANNED | **Bridge system: protocol imports + sync check** | P6/P8 | `docs/language-spec.md#7` | Host-language capabilities as generated, content-addressed bridge libraries with scoped imports, exec-time generation, staleness detection, and codeio bridge rebuild. |
 | 📋 PLANNED | **P2P AI landscape (M9-M10)** | P7 | `—` | Device mesh: discovery, capability ads, remote-node Ollama dispatch; sharded inference experiments. |
 | 📋 PLANNED | **Haskell parse/typecheck services** | P8 | `proto/frontend/` | Lexer, parser, Hindley-Milner type inference as gRPC services. |

@@ -192,3 +192,11 @@ pillar = "P5"
 status = "planned"
 entry = "docs/architecture-model.md"
 desc = "GUI shells as L2 plugins over the same proto contracts as the CLI; .cio constructs render as live surfaces (power-forms, query views, ai cards)."
+
+[[feature]]
+id = "coinos-bridge"
+name = "magic.coinos bridge (finance engine)"
+pillar = "P6"
+status = "planned"
+entry = "https://github.com/brandon-roberts/CoinOS/tree/main/proto/coinos"
+desc = "CodeIO consumes CoinOS (MAGIC finance engine) via bridge: BrokerBridge multi-venue trading, DecisionLedger, Treasury self-billing with budget guards."
