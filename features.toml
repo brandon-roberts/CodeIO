@@ -256,3 +256,27 @@ pillar = "P5/P8"
 status = "planned"
 entry = "-"
 desc = "Ecosystem layer over cio pkg: apps, IDE plugins, language extensions, and UPL flavors, each an L2 coherence plugin with conformance references; MAGIC-curated store."
+
+[[feature]]
+id = "mesh-contract"
+name = "P7 mesh contract (node model, capacity, transport, block streaming)"
+pillar = "P7"
+status = "building"
+entry = "proto/p2p/mesh.proto"
+desc = "Proto for local-first resource mesh: measured Capacity, LAN/Bluetooth/Direct/Internet transport preference, streamed WorkBlocks, aggregate MeshSummary ('LN as one big node')."
+
+[[feature]]
+id = "remote-node"
+name = "Remote-node inference dispatch (the primary P7 win)"
+pillar = "P7"
+status = "planned"
+entry = "docs/mesh-design.md"
+desc = "Thin client streams a job to the strongest local node (desktop Ollama) and streams results back — cheap phone, workstation quality, one LAN hop."
+
+[[feature]]
+id = "mesh-bench"
+name = "codeio doctor --bench (measured capacity)"
+pillar = "P7"
+status = "planned"
+entry = "services/crates/codeio-cli"
+desc = "Short local benchmark producing real tokens/sec and link throughput into Capacity; aggregate mesh numbers computed from measurements, never spec sheets."

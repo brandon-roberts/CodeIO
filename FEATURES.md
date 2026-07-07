@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-07 — 5 live · 7 building · 19 planned_
+_Regenerated 2026-07-07 — 5 live · 8 building · 21 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -19,6 +19,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
+| 🚧 BUILDING | **P7 mesh contract (node model, capacity, transport, block streaming)** | P7 | `proto/p2p/mesh.proto` | Proto for local-first resource mesh: measured Capacity, LAN/Bluetooth/Direct/Internet transport preference, streamed WorkBlocks, aggregate MeshSummary ('LN as one big node'). |
 | 🚧 BUILDING | **Architecture Authority (conformance refs + escalation)** | P9 | `VISION.md` | Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands. |
 | 📋 PLANNED | **C++ VM with hot swap (M11)** | P1 | `proto/vm/` | Bytecode interpreter with live code swap + state inspection. |
 | 📋 PLANNED | **codeio serve (application server mode)** | P1/P7 | `—` | Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams. |
@@ -36,6 +37,8 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 📋 PLANNED | **Bridge system: protocol imports + sync check** | P6/P8 | `docs/language-spec.md#7` | Host-language capabilities as generated, content-addressed bridge libraries with scoped imports, exec-time generation, staleness detection, and codeio bridge rebuild. |
 | 📋 PLANNED | **Universal language coverage (Java/PHP/Python/C++/JS/HTML/CSS/...)** | P6/P8 | `docs/language-spec.md#7` | Every mainstream language reachable two ways: tree-sitter lifting into the IR (read/query/edit) and bridges for live capability calls; HTML/CSS lift as declarative IR for the presentation layer. |
 | 📋 PLANNED | **P2P AI landscape (M9-M10)** | P7 | `—` | Device mesh: discovery, capability ads, remote-node Ollama dispatch; sharded inference experiments. |
+| 📋 PLANNED | **Remote-node inference dispatch (the primary P7 win)** | P7 | `docs/mesh-design.md` | Thin client streams a job to the strongest local node (desktop Ollama) and streams results back — cheap phone, workstation quality, one LAN hop. |
+| 📋 PLANNED | **codeio doctor --bench (measured capacity)** | P7 | `services/crates/codeio-cli` | Short local benchmark producing real tokens/sec and link throughput into Capacity; aggregate mesh numbers computed from measurements, never spec sheets. |
 | 📋 PLANNED | **Haskell parse/typecheck services** | P8 | `proto/frontend/` | Lexer, parser, Hindley-Milner type inference as gRPC services. |
 | 📋 PLANNED | **Semantic self-lift (M12)** | P8 | `—` | CodeIO's own polyglot source lifted into its IR; the system explores and reasons about itself. |
 | 📋 PLANNED | **Physical canvas (sketch->IR, spatial coords, glyph notation)** | P9 | `VISION.md` | Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; glyph notation as IR projection; continuous canvas-watch (mounted/phone camera, change-detected regions, proposed IR diffs). |

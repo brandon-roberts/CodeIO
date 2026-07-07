@@ -1,0 +1,68 @@
+syntax = "proto3";
+package codeio.p2p;
+
+// P7 — Local-first resource mesh. Every device is a Node with measured capacity.
+// Transport preference is explicit: local links before the internet.
+
+service MeshNode {
+  rpc Announce(NodeInfo) returns (Ack);              // broadcast presence + capacity
+  rpc Discover(DiscoverReq) returns (NodeList);      // who's on the mesh
+  rpc Heartbeat(NodeRef) returns (Capacity);         // live load/availability
+  rpc Dispatch(stream WorkBlock) returns (stream ResultBlock);  // streamed block work
+  rpc Reserve(ReserveReq) returns (Lease);           // claim resources before dispatch
+}
+
+enum Transport {
+  LAN = 0;          // preferred: local ethernet/wifi
+  BLUETOOTH = 1;    // preferred: no infrastructure needed
+  DIRECT = 2;       // wifi-direct / usb / other local
+  INTERNET = 3;     // fallback only
+}
+
+enum NodeClass { PHONE = 0; TABLET = 1; LAPTOP = 2; DESKTOP = 3; SERVER = 4; }
+enum OS { ANDROID = 0; IOS = 1; WINDOWS = 2; MACOS = 3; LINUX = 4; }
+
+message NodeInfo {
+  string node_id = 1;                 // content-addressed pubkey hash
+  string display_name = 2;
+  NodeClass node_class = 3;
+  OS os = 4;
+  Capacity capacity = 5;
+  repeated Transport transports = 6;  // links this node can serve over, priority order
+  repeated string models = 7;         // e.g. ollama models resident on this node
+}
+
+message Capacity {
+  double ram_free_mb = 1;
+  double vram_free_mb = 2;
+  int32  cpu_cores = 3;
+  bool   has_gpu = 4;
+  double tokens_per_sec = 5;          // measured, not claimed (see doctor/bench)
+  double battery_pct = 6;             // phones/tablets: don't drain a node below policy
+  double link_mbps = 7;               // best local link throughput
+}
+
+// A local network's total potential = sum of member capacities. Surfaced to the user.
+message MeshSummary {
+  string mesh_id = 1;
+  int32  node_count = 2;
+  Capacity aggregate = 3;             // the "LN as one big node" view
+  double   aggregate_tokens_per_sec = 4;
+}
+
+message WorkBlock {
+  string job_id = 1;
+  int64  seq = 2;                     // block ordering for streamed work
+  bytes  payload = 3;                 // opaque to transport; e.g. prompt shard / tensor slice
+  string kind = 4;                    // "inference" | "compute" | "index" | ...
+  bool   last = 5;
+}
+message ResultBlock { string job_id = 1; int64 seq = 2; bytes payload = 3; bool last = 4; string error = 5; }
+
+message DiscoverReq { repeated Transport prefer = 1; string capability = 2; }
+message NodeList { repeated NodeInfo nodes = 1; MeshSummary summary = 2; }
+message NodeRef { string node_id = 1; }
+message ReserveReq { NodeRef node = 1; Capacity need = 2; int32 ttl_sec = 3; }
+message Lease { string lease_id = 1; bool granted = 2; int32 ttl_sec = 3; string reason = 4; }
+message DiscoverReq2 {}
+message Ack { bool ok = 1; }
