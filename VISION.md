@@ -74,6 +74,13 @@ Layer assignments follow one rule: each language owns the layer it is genuinely 
 
 Cost discipline: every layer added must ship with its protoc target, CI job, and health check in the same PR. A layer without CI is a liability, not a paradigm.
 
+### P9 — Physical Canvas, Developer Authorship, Dual Execution
+**Physical canvas:** the software canvas extends into the real world. Whiteboard/paper sketches are photographed, vision-extracted (boxes, arrows, algorithm glyphs, handwriting), and proposed as IR — always human-confirmed, never silently absorbed. Every IR node may carry spatial coordinates (page, board, or 3D scene position), making location queryable and driving the P5 world. A hand-drawable glyph notation (map/fold/branch/recur symbols) is a first-class projection of the IR, equal to text syntax — handwriting and design skills return as programming input.
+
+**Architecture Authority (developer-as-author):** all architectural decisions live in developer-authored artifacts — VISION.md, the language spec, the architecture model, protos, features.toml, the decision log. AI operates in two modes only: *conformance* (implement exactly what the artifacts define; silence in the artifacts is a gap, not a license) and *escalation* (surface undecided questions as decision requests — never decide silently). Severity line: anything touching contracts, tiers, data models, or public interfaces escalates; below that is implementation detail in the developer's established style. Every AI-produced IR node carries a conformance reference to the artifact that authorized it; code that cannot cite its authority is flagged. The developer is the author; tool-provenance receipts are kept internally so conformance is provable, not merely claimed.
+
+**Dual execution:** the UPL is a real engine, not a transpiler. `codeio run` executes CodeIO directly (tree-walker today → bytecode VM → optional JIT); `codeio build --target <lang>` lowers to native executables when deployment or raw speed demands it. Lowering is a choice, never a dependency. Imported foreign code lives as IR; edits at any abstraction level are IR mutations absorbed by the living model and re-projected to lower languages — never static one-way translation.
+
 ---
 
 ## Non-negotiable engineering disciplines

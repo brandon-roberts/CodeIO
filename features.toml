@@ -200,3 +200,35 @@ pillar = "P6"
 status = "planned"
 entry = "https://github.com/brandon-roberts/CoinOS/tree/main/proto/coinos"
 desc = "CodeIO consumes CoinOS (MAGIC finance engine) via bridge: BrokerBridge multi-venue trading, DecisionLedger, Treasury self-billing with budget guards."
+
+[[feature]]
+id = "physical-canvas"
+name = "Physical canvas (sketch->IR, spatial coords, glyph notation)"
+pillar = "P9"
+status = "planned"
+entry = "VISION.md"
+desc = "Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; hand-drawable algorithm glyphs as an IR projection."
+
+[[feature]]
+id = "arch-authority"
+name = "Architecture Authority (conformance refs + escalation)"
+pillar = "P9"
+status = "building"
+entry = "VISION.md"
+desc = "Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands."
+
+[[feature]]
+id = "universal-coverage"
+name = "Universal language coverage (Java/PHP/Python/C++/JS/HTML/CSS/...)"
+pillar = "P6/P8"
+status = "planned"
+entry = "docs/language-spec.md#7"
+desc = "Every mainstream language reachable two ways: tree-sitter lifting into the IR (read/query/edit) and bridges for live capability calls; HTML/CSS lift as declarative IR for the presentation layer."
+
+[[feature]]
+id = "app-server"
+name = "codeio serve (application server mode)"
+pillar = "P1/P7"
+status = "planned"
+entry = "-"
+desc = "Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams."

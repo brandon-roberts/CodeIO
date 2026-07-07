@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-07 — 4 live · 6 building · 14 planned_
+_Regenerated 2026-07-07 — 4 live · 7 building · 17 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -18,7 +18,9 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
+| 🚧 BUILDING | **Architecture Authority (conformance refs + escalation)** | P9 | `VISION.md` | Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands. |
 | 📋 PLANNED | **C++ VM with hot swap (M11)** | P1 | `proto/vm/` | Bytecode interpreter with live code swap + state inspection. |
+| 📋 PLANNED | **codeio serve (application server mode)** | P1/P7 | `—` | Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams. |
 | 📋 PLANNED | **Lisp macro/DSL layer** | P2/P8 | `proto/meta/` | Macro expansion, DSL framework, homoiconic quasi-quote services. |
 | 📋 PLANNED | **Table-native data engine (M5)** | P3 | `—` | Typed schemas, relations, live queries, power-forms; wired into the Spotlight index. |
 | 📋 PLANNED | **Ollama inference backend (M3)** | P4 | `proto/ai/inference_backend.proto` | Backend-agnostic inference service with Ollama as first-class local backend; content-hash caching. |
@@ -29,8 +31,10 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 📋 PLANNED | **Language porting via tree-sitter (M8)** | P6 | `—` | Detect languages in a system and lift them into the CodeIO IR. |
 | 📋 PLANNED | **magic.coinos bridge (finance engine)** | P6 | `https://github.com/brandon-roberts/CoinOS/tree/main/proto/coinos` | CodeIO consumes CoinOS (MAGIC finance engine) via bridge: BrokerBridge multi-venue trading, DecisionLedger, Treasury self-billing with budget guards. |
 | 📋 PLANNED | **Bridge system: protocol imports + sync check** | P6/P8 | `docs/language-spec.md#7` | Host-language capabilities as generated, content-addressed bridge libraries with scoped imports, exec-time generation, staleness detection, and codeio bridge rebuild. |
+| 📋 PLANNED | **Universal language coverage (Java/PHP/Python/C++/JS/HTML/CSS/...)** | P6/P8 | `docs/language-spec.md#7` | Every mainstream language reachable two ways: tree-sitter lifting into the IR (read/query/edit) and bridges for live capability calls; HTML/CSS lift as declarative IR for the presentation layer. |
 | 📋 PLANNED | **P2P AI landscape (M9-M10)** | P7 | `—` | Device mesh: discovery, capability ads, remote-node Ollama dispatch; sharded inference experiments. |
 | 📋 PLANNED | **Haskell parse/typecheck services** | P8 | `proto/frontend/` | Lexer, parser, Hindley-Milner type inference as gRPC services. |
 | 📋 PLANNED | **Semantic self-lift (M12)** | P8 | `—` | CodeIO's own polyglot source lifted into its IR; the system explores and reasons about itself. |
+| 📋 PLANNED | **Physical canvas (sketch->IR, spatial coords, glyph notation)** | P9 | `VISION.md` | Whiteboard/paper ingestion via vision models with human confirmation; IR nodes carry spatial coordinates; hand-drawable algorithm glyphs as an IR projection. |
 
 See `VISION.md` for the pillars and `ROADMAP.md` for milestone tracking.
