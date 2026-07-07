@@ -33,6 +33,8 @@ enum Cmd {
     },
     /// Start an interactive REPL
     Repl,
+    /// Scan the environment: toolchains, services, AI backends — go/no-go report
+    Doctor,
     /// Show feature registry (live / building / planned)
     Features {
         /// Only show features with this status
@@ -71,7 +73,82 @@ fn main() {
         Cmd::Status => status(),
         Cmd::Run { file } => run_file(&file),
         Cmd::Repl => repl(),
+        Cmd::Doctor => doctor(),
         Cmd::Features { status } => features(&root, status.as_deref()),
+    }
+}
+
+struct Check {
+    name: &'static str,
+    kind: &'static str, // required | optional | ai
+    probe: &'static [&'static str],
+    install_hint: &'static str,
+}
+
+const CHECKS: &[Check] = &[
+    Check { name: "cargo (Rust)", kind: "required", probe: &["cargo", "--version"], install_hint: "https://rustup.rs  |  win: winget install Rustlang.Rustup" },
+    Check { name: "protoc", kind: "required", probe: &["protoc", "--version"], install_hint: "apt install protobuf-compiler  |  win: winget install protobuf" },
+    Check { name: "python3", kind: "required", probe: &["python3", "--version"], install_hint: "apt install python3  |  win: winget install Python.Python.3.12" },
+    Check { name: "git", kind: "required", probe: &["git", "--version"], install_hint: "apt install git  |  win: winget install Git.Git" },
+    Check { name: "node", kind: "optional", probe: &["node", "--version"], install_hint: "needed for IDE shell (M6): winget install OpenJS.NodeJS" },
+    Check { name: "ghc (Haskell)", kind: "optional", probe: &["ghc", "--version"], install_hint: "needed for frontend layer: https://www.haskell.org/ghcup/" },
+    Check { name: "g++ (C++)", kind: "optional", probe: &["g++", "--version"], install_hint: "needed for VM layer: apt install g++  |  win: VS Build Tools" },
+];
+
+fn probe_cmd(args: &[&str]) -> Option<String> {
+    Command::new(args[0])
+        .args(&args[1..])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| {
+            let s = String::from_utf8_lossy(&o.stdout);
+            let s = if s.trim().is_empty() { String::from_utf8_lossy(&o.stderr).to_string() } else { s.to_string() };
+            s.lines().next().unwrap_or("").trim().to_string()
+        })
+}
+
+fn probe_http(addr: &str) -> bool {
+    TcpStream::connect_timeout(&addr.parse().expect("addr"), Duration::from_millis(500)).is_ok()
+}
+
+fn doctor() {
+    println!("CodeIO system doctor — environment scan
+");
+    let mut required_missing = 0;
+    println!("── Toolchains ──");
+    for c in CHECKS {
+        match probe_cmd(c.probe) {
+            Some(v) => println!("  ✅ {:<14} {}", c.name, v),
+            None => {
+                let mark = if c.kind == "required" { required_missing += 1; "❌" } else { "⚪" };
+                println!("  {mark} {:<14} missing — {}", c.name, c.install_hint);
+            }
+        }
+    }
+    println!("
+── AI backends ──");
+    if probe_http("127.0.0.1:11434") {
+        // try to list models via the API for a richer report
+        match probe_cmd(&["ollama", "list"]) {
+            Some(_) => println!("  ✅ ollama         serving on :11434 (run `ollama list` for models)"),
+            None => println!("  ✅ ollama         serving on :11434"),
+        }
+    } else {
+        println!("  ⚪ ollama         not detected on :11434 — https://ollama.com/download (win: winget install Ollama.Ollama)");
+    }
+    println!("
+── CodeIO services ──");
+    for (name, _, port) in IMPLEMENTED {
+        let up = probe_http(&format!("127.0.0.1:{port}"));
+        println!("  {} {name:<14} :{port}", if up { "✅" } else { "⚪" });
+    }
+    println!();
+    if required_missing == 0 {
+        println!("GO: all required tooling present. Optional items above unlock further layers.");
+    } else {
+        println!("NO-GO: {required_missing} required tool(s) missing — install hints above.");
+        std::process::exit(1);
     }
 }
 

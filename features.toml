@@ -232,3 +232,27 @@ pillar = "P1/P7"
 status = "planned"
 entry = "-"
 desc = "Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams."
+
+[[feature]]
+id = "doctor"
+name = "codeio doctor (system analyzer, go/no-go)"
+pillar = "P1"
+status = "live"
+entry = "services/crates/codeio-cli"
+desc = "Scans toolchains (Rust/protoc/python/git/node/ghc/g++), AI backends (Ollama), and CodeIO services; per-OS install hints; exits nonzero on NO-GO for CI use."
+
+[[feature]]
+id = "pkg-manager"
+name = "cio pkg (UPL package manager)"
+pillar = "P1/P8"
+status = "planned"
+entry = "-"
+desc = "Internal package manager for .cio libraries and bridges: content-addressed packages, version resolution, lockfiles; the registry protocol doubles as the P7 mesh distribution channel."
+
+[[feature]]
+id = "app-store"
+name = "App store + plugin/extension manager"
+pillar = "P5/P8"
+status = "planned"
+entry = "-"
+desc = "Ecosystem layer over cio pkg: apps, IDE plugins, language extensions, and UPL flavors, each an L2 coherence plugin with conformance references; MAGIC-curated store."
