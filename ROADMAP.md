@@ -19,9 +19,9 @@ See `VISION.md` for the why. This file tracks where we are. Update it in every P
 - [x] Inline metaprogramming forms (spec §6) — open questions tracked in §9
 
 ## M2 — Minimal Interpreter (P1, P6)
-- [ ] `codeio-lang` crate: lexer, parser (consider folding Haskell layer into Rust — decision pending)
-- [ ] Tree-walking interpreter; run `.cio` files end to end
-- [ ] REPL
+- [x] `codeio-lang` crate: lexer, Pratt parser (Rust; Haskell owns full typechecking later per P8)
+- [x] Tree-walking interpreter with closures; `codeio run examples/hello.cio` works
+- [x] REPL (`codeio repl`) with persistent session environment
 
 ## M3 — Ollama Integration (P4)
 - [ ] `proto/ai/inference_backend.proto`: backend-agnostic inference service
@@ -30,7 +30,7 @@ See `VISION.md` for the why. This file tracks where we are. Update it in every P
 - [ ] Context assembly via existing ContextWindowService for every call
 
 ## M4 — AI Line-by-Line Mode (P4)
-- [ ] REPL mode where statements may be AI decisions/prompts/transforms
+- [x] REPL (`codeio repl`) with persistent session environment mode where statements may be AI decisions/prompts/transforms
 - [ ] Per-statement context budgeting
 
 ## M5 — Table Engine (P3)

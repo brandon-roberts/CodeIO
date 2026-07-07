@@ -26,6 +26,13 @@ enum Cmd {
     Start,
     /// Health-check all configured services
     Status,
+    /// Run a .cio program
+    Run {
+        /// Path to the .cio file
+        file: PathBuf,
+    },
+    /// Start an interactive REPL
+    Repl,
     /// Show feature registry (live / building / planned)
     Features {
         /// Only show features with this status
@@ -62,8 +69,56 @@ fn main() {
     match cli.cmd {
         Cmd::Start => start(&root),
         Cmd::Status => status(),
+        Cmd::Run { file } => run_file(&file),
+        Cmd::Repl => repl(),
         Cmd::Features { status } => features(&root, status.as_deref()),
     }
+}
+
+fn run_file(file: &Path) {
+    let src = match std::fs::read_to_string(file) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error: cannot read {}: {e}", file.display());
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = codeio_lang::run_source(&src) {
+        eprintln!("error: {e}");
+        std::process::exit(1);
+    }
+}
+
+fn repl() {
+    use std::io::{BufRead, Write};
+    println!("CodeIO v0 REPL — type expressions; Ctrl-D to exit");
+    let env = codeio_lang::interp::Env::root();
+    let stdin = std::io::stdin();
+    loop {
+        print!("cio> ");
+        std::io::stdout().flush().ok();
+        let mut line = String::new();
+        match stdin.lock().read_line(&mut line) {
+            Ok(0) => break,
+            Ok(_) => {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
+                match codeio_lang::run_in(line, &env) {
+                    Ok(v) => {
+                        let s = v.to_string();
+                        if s != "nil" {
+                            println!("{s}");
+                        }
+                    }
+                    Err(e) => println!("error: {e}"),
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    println!();
 }
 
 fn start(root: &Path) {

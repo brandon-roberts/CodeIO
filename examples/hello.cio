@@ -1,0 +1,21 @@
+// CodeIO v0 — first runnable program
+
+fn fib(n: Int) -> Int {
+    if n < 2 { return n }
+    fib(n - 1) + fib(n - 2)
+}
+
+fn double(x) { x * 2 }
+
+let name = "CodeIO"
+print("hello from " + name)
+print("fib(20) =", fib(20))
+print("pipes:", 5 |> double |> double)
+
+var total = 0
+var i = 1
+while i <= 100 {
+    total = total + i
+    i = i + 1
+}
+print("sum 1..100 =", total)

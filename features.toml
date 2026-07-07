@@ -77,9 +77,9 @@ desc = "Syntax + semantics: table declarations, query expressions, ai primitive,
 id = "interpreter"
 name = "Minimal interpreter (M2)"
 pillar = "P1/P6"
-status = "planned"
+status = "live"
 entry = "services/crates/codeio-lang"
-desc = "Lexer, parser, tree-walking interpreter; run .cio files."
+desc = "Lexer, Pratt parser, tree-walking interpreter with closures; codeio run + codeio repl; 9-test suite green. Tables/ai/meta/bridges land next."
 
 [[feature]]
 id = "ollama-backend"
