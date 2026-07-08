@@ -1,0 +1,45 @@
+syntax = "proto3";
+package codeio.lang;
+
+import "ir/ir.proto";
+
+// ONE contract, MANY implementations. Every host language (PHP/Java/Python/C++/Lisp/JS/HTML/CSS/...)
+// provides a service implementing this to translate between its own syntax and the shared IR.
+// This is how the polyglot system stays universal: adapters converge on codeio.ir, not on each other.
+
+service LanguageAdapter {
+  rpc Describe(Empty) returns (AdapterInfo);          // language, version, round-trip fidelity
+  rpc Lift(SourceUnit) returns (codeio.ir.Graph);     // foreign source  -> shared IR
+  rpc Project(codeio.ir.Graph) returns (SourceUnit);  // shared IR       -> foreign source
+  rpc Detect(SourceUnit) returns (DetectResult);      // "is this my language?" (workspace scan, P6)
+}
+
+message Empty {}
+
+message AdapterInfo {
+  string language = 1;          // "python" | "java" | "php" | "cpp" | "lisp" | "javascript" | "html" | "css"
+  string version = 2;
+  string grammar = 3;           // e.g. "tree-sitter-python@0.21"
+  Fidelity fidelity = 4;
+  repeated codeio.ir.NodeKind supported_kinds = 5;
+}
+
+// Honest capability declaration — no adapter claims more than it does.
+enum Fidelity {
+  NONE = 0;         // not implemented yet (slot reserved)
+  DETECT_ONLY = 1;  // can recognize the language but not lift
+  LIFT_ONLY = 2;    // source -> IR (read/query/visualize), no faithful projection back
+  ROUND_TRIP = 3;   // source <-> IR losslessly (full bidirectional sync)
+}
+
+message SourceUnit {
+  string language = 1;
+  string path = 2;
+  string content = 3;
+}
+
+message DetectResult {
+  bool is_match = 1;
+  double confidence = 2;
+  string language = 3;
+}

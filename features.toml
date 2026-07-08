@@ -296,3 +296,27 @@ pillar = "P5"
 status = "live"
 entry = "tools/termux"
 desc = "One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud."
+
+[[feature]]
+id = "shared-ir"
+name = "Canonical shared IR contract"
+pillar = "P1/P6/P8"
+status = "building"
+entry = "proto/ir/ir.proto"
+desc = "The single content-addressed IR all languages target: 12 node kinds, provenance (P9 authorship), spatial coords (P9 canvas). Contract done; materialization in the engine is next."
+
+[[feature]]
+id = "adapter-contract"
+name = "LanguageAdapter contract (lift/project/detect)"
+pillar = "P6/P8"
+status = "building"
+entry = "proto/lang/adapter.proto"
+desc = "One service contract every language implements; fidelity ladder (NONE/DETECT/LIFT/ROUND_TRIP) declares honest per-language capability."
+
+[[feature]]
+id = "lang-slots"
+name = "Language service slots (Python/JS/Java/C++/PHP/Lisp/HTML/CSS/Haskell/Rust)"
+pillar = "P6/P8"
+status = "planned"
+entry = "docs/language-services.md"
+desc = "Reserved adapter node slots for each host language, tree-sitter-backed (M8), filled DETECT->LIFT->ROUND_TRIP as we scale. Framework laid; adapters not yet built."

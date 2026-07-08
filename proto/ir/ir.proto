@@ -1,0 +1,56 @@
+syntax = "proto3";
+package codeio.ir;
+
+// THE canonical shared IR — one representation all languages lift into and project out of.
+// There is exactly ONE IR. Languages do not get their own; they get adapters (proto/lang/adapter.proto)
+// that translate between their syntax and THIS. Node ids are content-addressed: sha256 of canonical bytes.
+// Node kinds align with docs/language-spec.md §9.
+
+message Node {
+  string id = 1;              // sha256(canonical encoding) — content address
+  NodeKind kind = 2;
+  repeated string children = 3;   // child node ids (structure by reference, not nesting)
+  map<string, string> attrs = 4;  // kind-specific fields (literal value, op, name, ...)
+  Provenance provenance = 5;      // P9 Architecture Authority: who authored, against what
+  Spatial spatial = 6;            // P9 physical canvas: optional coordinates
+}
+
+enum NodeKind {
+  LITERAL = 0;   // number, string, bool, nil
+  REF = 1;       // variable / symbol reference
+  CALL = 2;      // function application
+  FN = 3;        // function definition
+  MATCH = 4;     // pattern match / branch
+  RECORD = 5;    // record / struct literal
+  TABLE_DEF = 6; // table schema declaration (P3)
+  QUERY = 7;     // from/where/select (P3)
+  AI_CALL = 8;   // ai primitive invocation (P4)
+  QUOTE = 9;     // metaprogramming: code-as-data (P2)
+  SPLICE = 10;   // metaprogramming: unquote/insert (P2)
+  EFFECT = 11;   // effectful op; EFFECT with attrs["opaque"]=true holds un-liftable foreign code
+}
+
+// Every node records how it came to exist — developer-as-author doctrine (P9).
+message Provenance {
+  string author_kind = 1;     // "human" | "ai" | "lifted"
+  string author = 2;          // developer id, or model id, or source language
+  string authority_ref = 3;   // conformance reference: spec section / proto / decision-log id
+  string source_lang = 4;     // for lifted nodes: originating language
+  int64  ts_ms = 5;
+}
+
+// Optional physical-canvas coordinates (P9): page/board/3D-scene position.
+message Spatial {
+  string surface = 1;         // "page:3" | "board:north-wall" | "scene:main"
+  double x = 2;
+  double y = 3;
+  double z = 4;
+}
+
+// A graph is a set of content-addressed nodes plus roots. This is what the IDE renders,
+// what the AI addresses, and what adapters produce/consume.
+message Graph {
+  repeated Node nodes = 1;
+  repeated string roots = 2;
+  map<string, string> meta = 3;   // module name, source hash, etc.
+}
