@@ -321,8 +321,9 @@ function label(txt,x,y,size,col){ ctx.fillStyle=col||'#dbe7ff'; ctx.font='bold '
   ctx.fillText(txt,x,y); }
 
 // ---------- render: one sheet, scale-through ----------
-function render(){ const dpr=window.devicePixelRatio||1; c.width=c.clientWidth*dpr; c.height=c.clientHeight*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+let DPR=window.devicePixelRatio||1;
+function sizeCanvas(){ DPR=window.devicePixelRatio||1; c.width=Math.max(1,c.clientWidth*DPR); c.height=Math.max(1,c.clientHeight*DPR); }
+function render(){ if(c.width<2) sizeCanvas(); ctx.setTransform(DPR,0,0,DPR,0,0);
   // blueprint paper
   ctx.fillStyle='#12345f'; ctx.fillRect(0,0,c.clientWidth,c.clientHeight);
   drawPaperGrid();
@@ -432,9 +433,14 @@ c.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){cam.x=e.touch
     cam.x=mx-(mx-cam.x)*f;cam.y=my-(my-cam.y)*f;cam.z=Math.max(0.02,Math.min(6,cam.z*f));pinch=d;render(); } },{passive:true});
 c.addEventListener('touchend',()=>{drag=null;pinch=null;});
 function dst(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+// desktop/trackpad wheel zoom (also proves the zoom path works)
+c.addEventListener('wheel',e=>{ e.preventDefault(); const f=e.deltaY<0?1.1:0.9;
+  const mx=e.clientX,my=e.clientY; cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f;
+  cam.z=Math.max(0.02,Math.min(6,cam.z*f)); render(); },{passive:false});
 // double-tap system<->reset
 let lastTap=0; c.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTap<300){ if(world.mode==='logic'){world.mode='system';fitAll();} else fitAll(); } lastTap=now; });
-window.addEventListener('resize',render);
-loadRepo();
+window.addEventListener('resize',()=>{sizeCanvas();render();});
+// ensure canvas has real dimensions before first paint
+requestAnimationFrame(()=>{ sizeCanvas(); loadRepo(); });
 </script>
 </body></html>"##;
