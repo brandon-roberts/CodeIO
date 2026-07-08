@@ -258,13 +258,15 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
     border-radius:6px;padding:10px;font:inherit;font-size:15px;resize:none;}
   #editPane .er{display:flex;gap:8px;padding:0 8px 8px;}
   #editPane .er button{flex:1;padding:10px;border-radius:6px;border:1px solid var(--line2);background:var(--blue);color:var(--ink);font:inherit;font-weight:700;}
-  #out{position:absolute;left:8px;bottom:8px;max-width:70%;background:rgba(11,28,56,.85);border:1px solid var(--line2);
-    border-radius:6px;padding:6px 10px;font-size:11px;color:var(--ink);z-index:4;pointer-events:none;}
+  #out{position:absolute;left:14px;top:10px;max-width:60%;background:rgba(11,28,56,.9);border:1px solid var(--line2);
+    border-radius:6px;padding:6px 10px;font-size:11px;color:var(--ink);z-index:4;pointer-events:none;
+    opacity:0;transition:opacity .3s;}
+  #out.show{opacity:1;}
 </style></head>
 <body><div id="wrap">
   <div id="bar"><h1>CodeIO &middot; BLUEPRINT</h1><span class="sp"></span>
-    <button onclick="zoomBy(1.4)">+</button>
-    <button onclick="zoomBy(0.7)">&minus;</button>
+    <button onclick="zoomBy(1.25)">+</button>
+    <button onclick="zoomBy(0.8)">&minus;</button>
     <button onclick="fitAll()">FIT</button>
     <button onclick="toggleEdit()">CODE</button>
   </div>
@@ -284,7 +286,8 @@ print("buys:", buys)</textarea>
 const c=document.getElementById('c'), ctx=c.getContext('2d');
 const code=document.getElementById('code'), outEl=document.getElementById('out');
 let cam={x:0,y:0,z:0.3}, world={crates:[],mode:'system',logic:null};
-function out(s){ outEl.textContent=s; }
+let outTimer=null; function out(s){ outEl.textContent=s; outEl.classList.add('show');
+  clearTimeout(outTimer); outTimer=setTimeout(()=>outEl.classList.remove('show'),2500); }
 function toggleEdit(){ document.getElementById('editPane').classList.toggle('open'); }
 
 // ---------- data ----------
@@ -308,7 +311,7 @@ function fitAll(){ if(!world.crates.length)return; const cols=Math.ceil(Math.sqr
   const W=cols*630, H=Math.ceil(world.crates.length/cols)*490;
   cam.z=Math.min(c.clientWidth/W, c.clientHeight/H)*0.92; cam.x=(c.clientWidth-W*cam.z)/2; cam.y=(c.clientHeight-H*cam.z)/2; render(); }
 function zoomBy(f){ const mx=c.clientWidth/2,my=c.clientHeight/2; cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f;
-  cam.z=Math.max(0.03,Math.min(3,cam.z*f)); render(); }
+  cam.z=Math.max(0.02,Math.min(6,cam.z*f)); render(); }
 
 // ---------- drafting primitives ----------
 function line(x1,y1,x2,y2,w,dash){ ctx.save(); ctx.lineWidth=w/cam.z; if(dash)ctx.setLineDash(dash.map(d=>d/cam.z));
@@ -426,7 +429,7 @@ c.addEventListener('touchstart',e=>{ if(e.touches.length===1)drag={x:e.touches[0
   else if(e.touches.length===2)pinch=dst(e); },{passive:true});
 c.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){cam.x=e.touches[0].clientX-drag.x;cam.y=e.touches[0].clientY-drag.y;render();}
   else if(e.touches.length===2&&pinch){ const d=dst(e),f=d/pinch,mx=(e.touches[0].clientX+e.touches[1].clientX)/2,my=(e.touches[0].clientY+e.touches[1].clientY)/2;
-    cam.x=mx-(mx-cam.x)*f;cam.y=my-(my-cam.y)*f;cam.z=Math.max(0.03,Math.min(3,cam.z*f));pinch=d;render(); } },{passive:true});
+    cam.x=mx-(mx-cam.x)*f;cam.y=my-(my-cam.y)*f;cam.z=Math.max(0.02,Math.min(6,cam.z*f));pinch=d;render(); } },{passive:true});
 c.addEventListener('touchend',()=>{drag=null;pinch=null;});
 function dst(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
 // double-tap system<->reset
