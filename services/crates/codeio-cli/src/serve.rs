@@ -67,6 +67,7 @@ fn route(method: &str, path: &str, body: &str) -> (&'static str, &'static str, S
         ("POST", "/run") => ("200 OK", "application/json", api_run(body)),
         ("POST", "/ir") => ("200 OK", "application/json", api_ir(body)),
         ("GET", "/status") => ("200 OK", "application/json", api_status()),
+        ("GET", "/map") => ("200 OK", "application/json", api_map()),
         _ => ("404 Not Found", "text/plain", "not found".into()),
     }
 }
@@ -154,6 +155,61 @@ fn api_ir(body: &str) -> String {
     format!("{{\"ok\":true,\"count\":{},\"roots\":[{}],\"nodes\":{}}}", g.len(), roots.join(","), nodes)
 }
 
+fn repo_root_dir() -> std::path::PathBuf {
+    let mut dir = std::env::current_dir().unwrap_or_default();
+    loop { if dir.join("features.toml").exists() { return dir; } if !dir.pop() { break; } }
+    std::env::current_dir().unwrap_or_default()
+}
+
+// Scan the real repository into a hierarchy for the codebase map (middle-out semantic zoom).
+fn api_map() -> String {
+    let root = repo_root_dir();
+    let mut crates: Vec<String> = Vec::new();
+    let services = root.join("services/crates");
+    if let Ok(entries) = std::fs::read_dir(&services) {
+        let mut cdirs: Vec<_> = entries.filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.is_dir()).collect();
+        cdirs.sort();
+        for cdir in cdirs {
+            let cname = cdir.file_name().unwrap().to_string_lossy().to_string();
+            let src = cdir.join("src");
+            let mut files_json: Vec<String> = Vec::new();
+            if let Ok(fs_entries) = std::fs::read_dir(&src) {
+                let mut files: Vec<_> = fs_entries.filter_map(|e| e.ok().map(|e| e.path()))
+                    .filter(|p| p.extension().map_or(false, |x| x == "rs")).collect();
+                files.sort();
+                for f in files {
+                    let fname = f.file_name().unwrap().to_string_lossy().to_string();
+                    let content = std::fs::read_to_string(&f).unwrap_or_default();
+                    let loc = content.lines().count();
+                    // extract top-level symbols: fn / struct / enum / trait / pub fn
+                    let mut syms: Vec<String> = Vec::new();
+                    for line in content.lines() {
+                        let l = line.trim_start();
+                        for (kw, kind) in [("pub fn ","fn"),("fn ","fn"),("pub struct ","struct"),
+                                           ("struct ","struct"),("pub enum ","enum"),("enum ","enum"),
+                                           ("pub trait ","trait"),("trait ","trait")] {
+                            if let Some(rest) = l.strip_prefix(kw) {
+                                let name: String = rest.chars()
+                                    .take_while(|c| c.is_alphanumeric() || *c=='_').collect();
+                                if !name.is_empty() {
+                                    syms.push(format!("{{\"name\":\"{}\",\"kind\":\"{}\"}}", json_escape(&name), kind));
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    files_json.push(format!(
+                        "{{\"name\":\"{}\",\"loc\":{},\"symbols\":[{}]}}",
+                        json_escape(&fname), loc, syms.join(",")));
+                }
+            }
+            crates.push(format!("{{\"name\":\"{}\",\"files\":[{}]}}", json_escape(&cname), files_json.join(",")));
+        }
+    }
+    format!("{{\"ok\":true,\"crates\":[{}]}}", crates.join(","))
+}
+
 fn api_status() -> String {
     // read features.toml (repo root discovered by walking up) to show real system state
     let mut dir = std::env::current_dir().unwrap_or_default();
@@ -218,6 +274,7 @@ const INDEX_HTML: &str = r#"<!DOCTYPE html>
 <div class="tabs">
   <button class="on" onclick="tab('edit',this)">Editor</button>
   <button onclick="tab('bp',this)">Blueprint</button>
+  <button onclick="tab('map',this)">Codebase</button>
   <button onclick="tab('sys',this)">System</button>
 </div>
 <main>
@@ -242,6 +299,15 @@ print("buys:", buys)</textarea>
     <pre id="bpinfo">tap "Refresh from code" to render the IR of your program.</pre>
   </section>
 
+  <section id="map" class="view">
+    <div class="lbl">Codebase map — zoom to scale through the whole system (middle-out)</div>
+    <canvas id="mv"></canvas>
+    <div class="row"><button class="alt" onclick="loadMap()">Load repo</button>
+      <button class="alt" onclick="mapZoom(1.4)">Zoom +</button>
+      <button class="alt" onclick="mapZoom(0.7)">Zoom &minus;</button></div>
+    <pre id="mapinfo">tap "Load repo" to map the entire codebase.</pre>
+  </section>
+
   <section id="sys" class="view">
     <div class="lbl">System status — what is actually live</div>
     <div class="counts"><div><div class="n live" id="cl">-</div><div class="k">live</div></div>
@@ -254,7 +320,7 @@ print("buys:", buys)</textarea>
 function tab(id, btn){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on')); if(btn)btn.classList.add('on');
-  if(id==='sys') loadStatus(); }
+  if(id==='sys') loadStatus(); if(id==='map'&&!MAP) loadMap(); }
 async function post(p,code){ const r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})}); return r.json(); }
 async function run(){ document.getElementById('out').textContent='running...';
   try{ const d=await post('/run',code.value); document.getElementById('out').textContent=d.ok?('=> '+d.result):('error: '+d.error);}catch(e){document.getElementById('out').textContent='err: '+e;} }
@@ -361,5 +427,59 @@ cv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){view.x=e.tou
   else if(e.touches.length===2&&pinch){const d=dist(e);view.s=Math.max(0.2,Math.min(3,view.s*d/pinch));pinch=d;render();} },{passive:true});
 cv.addEventListener('touchend',()=>{drag=null;pinch=null;});
 function dist(e){ const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY; return Math.hypot(dx,dy); }
+
+// ===== Codebase map: camera-based semantic zoom over the WHOLE repo =====
+let MAP=null, cam={x:0,y:0,z:0.15};
+const mv=document.getElementById('mv'), mctx=mv.getContext('2d');
+async function loadMap(){ document.getElementById('mapinfo').textContent='mapping repo...';
+  try{ const r=await fetch('/map'); const d=await r.json(); MAP=layoutMap(d.crates); centerMap(); renderMap();
+    document.getElementById('mapinfo').textContent=MAP.crates.length+' crates · '+MAP.fileCount+' files · '+MAP.symCount+' symbols — pinch to scale in/out';
+  }catch(e){ document.getElementById('mapinfo').textContent='err: '+e; } }
+function layoutMap(crates){ let fileCount=0, symCount=0;
+  const cols=Math.ceil(Math.sqrt(crates.length)); const CW=520, CH=380, GAP=40;
+  const laidCrates=crates.map((c,i)=>{ const cx=(i%cols)*(CW+GAP), cy=Math.floor(i/cols)*(CH+GAP);
+    const files=c.files; fileCount+=files.length;
+    const fcols=Math.max(1,Math.ceil(Math.sqrt(files.length))); const FW=(CW-40)/fcols;
+    const laidFiles=files.map((f,fi)=>{ const fx=cx+20+(fi%fcols)*FW, fy=cy+50+Math.floor(fi/fcols)*90;
+      symCount+=f.symbols.length;
+      const scols=Math.max(1,Math.ceil(Math.sqrt(Math.max(1,f.symbols.length)))); const SW=(FW-10)/scols;
+      const laidSyms=f.symbols.map((s,si)=>({name:s.name,kind:s.kind, x:fx+4+(si%scols)*SW, y:fy+34+Math.floor(si/scols)*16, w:SW-3}));
+      return {name:f.name,loc:f.loc, x:fx, y:fy, w:FW-8, h:80, syms:laidSyms}; });
+    return {name:c.name, x:cx, y:cy, w:CW, h:CH, laidFiles}; });
+  return {crates:laidCrates, fileCount, symCount, cols, CW, CH, GAP}; }
+function centerMap(){ if(!MAP)return; const cols=MAP.cols;
+  const totalW=cols*(MAP.CW+MAP.GAP), totalH=Math.ceil(MAP.crates.length/cols)*(MAP.CH+MAP.GAP);
+  cam.z=Math.min(mv.clientWidth/totalW, mv.clientHeight/totalH)*0.9;
+  cam.x=(mv.clientWidth-totalW*cam.z)/2; cam.y=(mv.clientHeight-totalH*cam.z)/2; }
+const CKIND={fn:'#d29922',struct:'#56d4dd',enum:'#a371f7',trait:'#f78166'};
+function renderMap(){ if(!MAP)return; const dpr=window.devicePixelRatio||1;
+  mv.width=mv.clientWidth*dpr; mv.height=mv.clientHeight*dpr; mctx.setTransform(dpr,0,0,dpr,0,0);
+  mctx.clearRect(0,0,mv.clientWidth,mv.clientHeight);
+  mctx.save(); mctx.translate(cam.x,cam.y); mctx.scale(cam.z,cam.z); const z=cam.z;
+  MAP.crates.forEach(c=>{ mctx.fillStyle='#11161d'; mctx.strokeStyle='#30363d'; mctx.lineWidth=2/z;
+    mctx.fillRect(c.x,c.y,c.w,c.h); mctx.strokeRect(c.x,c.y,c.w,c.h);
+    mctx.fillStyle='#4a9eff'; mctx.font='bold 18px monospace'; mctx.fillText(c.name, c.x+14, c.y+30);
+    if(z>0.12){ c.laidFiles.forEach(f=>{ mctx.fillStyle='#161b22'; mctx.strokeStyle='#3a4150'; mctx.lineWidth=1/z;
+      mctx.fillRect(f.x,f.y,f.w,f.h); mctx.strokeRect(f.x,f.y,f.w,f.h);
+      mctx.fillStyle='#c9d1d9'; mctx.font='11px monospace'; mctx.fillText(f.name+'  ·  '+f.loc+' LOC', f.x+6, f.y+16);
+      if(z>0.35){ f.syms.forEach(s=>{ mctx.fillStyle=CKIND[s.kind]||'#8b949e';
+        mctx.fillRect(s.x,s.y,Math.max(6,s.w),12);
+        if(z>0.7){ mctx.fillStyle='#0d1117'; mctx.font='8px monospace'; mctx.fillText((s.name||'').slice(0,Math.floor(s.w/5)), s.x+2, s.y+9); } }); }
+    }); } });
+  mctx.restore();
+  mctx.fillStyle='#0d1117'; mctx.fillRect(0,0,mv.clientWidth,26); mctx.strokeStyle='#30363d'; mctx.strokeRect(0,0,mv.clientWidth,26);
+  const lvl = z<0.12?'SYSTEM (crates)': z<0.35?'MODULE (files)': z<0.7?'SYMBOLS':'DETAIL';
+  mctx.fillStyle='#e6edf3'; mctx.font='bold 11px monospace'; mctx.fillText('LEVEL: '+lvl+'   scale '+z.toFixed(2)+'x', 10, 18); }
+function mapZoom(f){ const cx=mv.clientWidth/2, cy=mv.clientHeight/2;
+  cam.x=cx-(cx-cam.x)*f; cam.y=cy-(cy-cam.y)*f; cam.z*=f; renderMap(); }
+let mdrag=null,mpinch=null;
+mv.addEventListener('touchstart',e=>{ if(e.touches.length===1)mdrag={x:e.touches[0].clientX-cam.x,y:e.touches[0].clientY-cam.y};
+  else if(e.touches.length===2)mpinch=dist(e); },{passive:true});
+mv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&mdrag){cam.x=e.touches[0].clientX-mdrag.x;cam.y=e.touches[0].clientY-mdrag.y;renderMap();}
+  else if(e.touches.length===2&&mpinch){ const d=dist(e); const f=d/mpinch;
+    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2, my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f; cam.z=Math.max(0.04,Math.min(2,cam.z*f)); mpinch=d; renderMap(); } },{passive:true});
+mv.addEventListener('touchend',()=>{mdrag=null;mpinch=null;});
+
 </script>
 </body></html>"#;

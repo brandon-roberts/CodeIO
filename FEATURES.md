@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 11 live · 12 building · 22 planned_
+_Regenerated 2026-07-08 — 11 live · 13 building · 22 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -26,6 +26,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
+| 🚧 BUILDING | **Codebase map (camera semantic-zoom over the whole repo)** | P5 | `services/crates/codeio-cli/src/serve.rs` | Middle-out camera view of the ENTIRE repo scanned live (/map): crates as regions, files inside, symbols inside files. Zoom changes level-of-detail (SYSTEM->MODULE->SYMBOLS->DETAIL). Pinch/pan. Real navigation, not a card tree. |
 | 🚧 BUILDING | **LanguageAdapter contract (lift/project/detect)** | P6/P8 | `proto/lang/adapter.proto` | One service contract every language implements; fidelity ladder (NONE/DETECT/LIFT/ROUND_TRIP) declares honest per-language capability. |
 | 🚧 BUILDING | **AdapterFactory (port entire languages/libraries via grammar+rules)** | P6/P8 | `proto/lang/adapter.proto` | Factory contract: build a LanguageAdapter from a tree-sitter grammar + IR mapping ruleset; PortLibrary lifts a library's public surface into IR nodes. Mass-production path for polyglot scaling. |
 | 🚧 BUILDING | **P7 mesh contract (node model, capacity, transport, block streaming)** | P7 | `proto/p2p/mesh.proto` | Proto for local-first resource mesh: measured Capacity, LAN/Bluetooth/Direct/Internet transport preference, streamed WorkBlocks, aggregate MeshSummary ('LN as one big node'). |
