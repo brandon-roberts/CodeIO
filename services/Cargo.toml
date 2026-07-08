@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/codeio-lang",
+    "crates/codeio-ir",
     "crates/codeio-cli",
   "crates/codeio-common",
   "crates/codeio-index",

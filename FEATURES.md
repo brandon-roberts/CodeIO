@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 6 live · 11 building · 22 planned_
+_Regenerated 2026-07-08 — 7 live · 11 building · 22 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -11,17 +11,18 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **codeio CLI (main entry point)** | P1 | `services/crates/codeio-cli` | Single entry point: start services, check status, list features. `cargo run -p codeio-cli -- --help` |
 | ✅ LIVE | **codeio doctor (system analyzer, go/no-go)** | P1 | `services/crates/codeio-cli` | Scans toolchains (Rust/protoc/python/git/node/ghc/g++), AI backends (Ollama), and CodeIO services; per-OS install hints; exits nonzero on NO-GO for CI use. |
 | ✅ LIVE | **Minimal interpreter (M2)** | P1/P6 | `services/crates/codeio-lang` | Lexer, Pratt parser, tree-walking interpreter with closures; codeio run + codeio repl; 9-test suite green. Tables/ai/meta/bridges land next. |
+| ✅ LIVE | **Canonical shared IR (materialized in engine)** | P1/P6/P8 | `services/crates/codeio-ir` | The single content-addressed IR: 12 node kinds, per-node provenance + metadata, content-address dedup, kind-histogram self-analysis. Materializes any .cio program; `codeio ir <file>` shows the graph. Tested. |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
 | ✅ LIVE | **Evolution architecture model (tiers + coherence plugins)** | P1/P8 | `docs/architecture-model.md` | L0/L1/L2 normalization; no lateral coupling; parts bound only by higher-tier coherence plugins. |
 | ✅ LIVE | **Android/Termux runner (setup script + cio menu)** | P5 | `tools/termux` | One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud. |
 | 🚧 BUILDING | **Dependency map service** | P1 | `services/crates/codeio-depmap` | Import/dependency graph resolver. |
-| 🚧 BUILDING | **Canonical shared IR contract** | P1/P6/P8 | `proto/ir/ir.proto` | The single content-addressed IR all languages target: 12 node kinds, provenance (P9 authorship), spatial coords (P9 canvas). Contract done; materialization in the engine is next. |
 | 🚧 BUILDING | **Language spec v0 (M1)** | P2/P3/P4 | `docs/language-spec.md` | Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms. |
 | 🚧 BUILDING | **Workspace indexer service** | P3 | `services/crates/codeio-index` | Scans workspaces into content-addressed IndexEntry chunks with symbol records. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Context window engine** | P4 | `services/crates/codeio-context` | Token-budgeted, relevance-ranked context assembly (greedy knapsack). The small-context AI discipline lives here. |
 | 🚧 BUILDING | **Python AI layer** | P4 | `ai/codeio` | LLM client, tool dispatcher, context window manager. Needs proto stubs generated + tests. |
 | 🚧 BUILDING | **LanguageAdapter contract (lift/project/detect)** | P6/P8 | `proto/lang/adapter.proto` | One service contract every language implements; fidelity ladder (NONE/DETECT/LIFT/ROUND_TRIP) declares honest per-language capability. |
+| 🚧 BUILDING | **AdapterFactory (port entire languages/libraries via grammar+rules)** | P6/P8 | `proto/lang/adapter.proto` | Factory contract: build a LanguageAdapter from a tree-sitter grammar + IR mapping ruleset; PortLibrary lifts a library's public surface into IR nodes. Mass-production path for polyglot scaling. |
 | 🚧 BUILDING | **P7 mesh contract (node model, capacity, transport, block streaming)** | P7 | `proto/p2p/mesh.proto` | Proto for local-first resource mesh: measured Capacity, LAN/Bluetooth/Direct/Internet transport preference, streamed WorkBlocks, aggregate MeshSummary ('LN as one big node'). |
 | 🚧 BUILDING | **Block-stream transport (nested header/body/closer, context-once)** | P7 | `proto/p2p/blockstream.proto` | FrostWire-for-compute transport: one long-lived outbound device stream multiplexed by stream_id; HEADER declares context once, lean BODY blocks, nested sub-streams, CLOSER integrity; bidirectional dispatch/result over carrier NAT. |
 | 🚧 BUILDING | **Architecture Authority (conformance refs + escalation)** | P9 | `VISION.md` | Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands. |

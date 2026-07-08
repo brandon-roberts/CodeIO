@@ -299,11 +299,11 @@ desc = "One-command setup.sh (install/clone/build/launcher) and an interactive `
 
 [[feature]]
 id = "shared-ir"
-name = "Canonical shared IR contract"
+name = "Canonical shared IR (materialized in engine)"
 pillar = "P1/P6/P8"
-status = "building"
-entry = "proto/ir/ir.proto"
-desc = "The single content-addressed IR all languages target: 12 node kinds, provenance (P9 authorship), spatial coords (P9 canvas). Contract done; materialization in the engine is next."
+status = "live"
+entry = "services/crates/codeio-ir"
+desc = "The single content-addressed IR: 12 node kinds, per-node provenance + metadata, content-address dedup, kind-histogram self-analysis. Materializes any .cio program; `codeio ir <file>` shows the graph. Tested."
 
 [[feature]]
 id = "adapter-contract"
@@ -320,3 +320,11 @@ pillar = "P6/P8"
 status = "planned"
 entry = "docs/language-services.md"
 desc = "Reserved adapter node slots for each host language, tree-sitter-backed (M8), filled DETECT->LIFT->ROUND_TRIP as we scale. Framework laid; adapters not yet built."
+
+[[feature]]
+id = "adapter-factory"
+name = "AdapterFactory (port entire languages/libraries via grammar+rules)"
+pillar = "P6/P8"
+status = "building"
+entry = "proto/lang/adapter.proto"
+desc = "Factory contract: build a LanguageAdapter from a tree-sitter grammar + IR mapping ruleset; PortLibrary lifts a library's public surface into IR nodes. Mass-production path for polyglot scaling."

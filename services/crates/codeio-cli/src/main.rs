@@ -33,6 +33,14 @@ enum Cmd {
     },
     /// Start an interactive REPL
     Repl,
+    /// Materialize a .cio file into the IR graph and show its structure
+    Ir {
+        /// Path to the .cio file
+        file: PathBuf,
+        /// Show every node (default: summary + histogram)
+        #[arg(long)]
+        full: bool,
+    },
     /// Scan the environment: toolchains, services, AI backends — go/no-go report
     Doctor,
     /// Interactive menu (friendly for phones / Termux)
@@ -75,6 +83,7 @@ fn main() {
         Cmd::Status => status(),
         Cmd::Run { file } => run_file(&file),
         Cmd::Repl => repl(),
+        Cmd::Ir { file, full } => show_ir(&file, full),
         Cmd::Doctor => doctor(),
         Cmd::Menu => menu(&root),
         Cmd::Features { status } => features(&root, status.as_deref()),
@@ -227,6 +236,41 @@ fn run_file(file: &Path) {
         eprintln!("error: {e}");
         std::process::exit(1);
     }
+}
+
+fn show_ir(file: &Path, full: bool) {
+    let src = match std::fs::read_to_string(file) {
+        Ok(s) => s,
+        Err(e) => { eprintln!("error: cannot read {}: {e}", file.display()); std::process::exit(1); }
+    };
+    let toks = match codeio_lang::lexer::Lexer::new(&src).tokenize() {
+        Ok(t) => t, Err(e) => { eprintln!("lex error: {e}"); std::process::exit(1); }
+    };
+    let stmts = match codeio_lang::parser::Parser::new(toks).parse_program() {
+        Ok(s) => s, Err(e) => { eprintln!("parse error: {e}"); std::process::exit(1); }
+    };
+    let g = codeio_ir::lower(&stmts);
+    println!("IR graph for {}", file.display());
+    println!("  {} unique content-addressed nodes, {} roots
+", g.len(), g.roots.len());
+    println!("  node kind histogram (self-analysis surface):");
+    for (kind, count) in g.kind_histogram() {
+        println!("    {kind:<10} {count}");
+    }
+    if full {
+        println!("
+  nodes:");
+        let mut ids: Vec<&String> = g.nodes.keys().collect();
+        ids.sort();
+        for id in ids {
+            let n = &g.nodes[id];
+            let attrs: Vec<String> = n.attrs.iter().map(|(k, v)| format!("{k}={v}")).collect();
+            println!("    {}  {:<10} [{}] children={}",
+                &n.id[..8], n.kind.as_str(), attrs.join(" "), n.children.len());
+        }
+    }
+    println!("
+  every node carries provenance (author_kind, authority_ref, source_lang) per P9.");
 }
 
 fn repl() {

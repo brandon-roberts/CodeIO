@@ -43,3 +43,24 @@ message DetectResult {
   double confidence = 2;
   string language = 3;
 }
+
+// AdapterFactory — mass-produces LanguageAdapters from a grammar + mapping ruleset,
+// so entire languages port IN without hand-writing each adapter (the "factory to port in
+// entire languages and libraries" requirement). Libraries port via LibrarySpec.
+service AdapterFactory {
+  rpc BuildAdapter(AdapterSpec) returns (AdapterInfo);   // grammar + rules -> a working adapter
+  rpc PortLibrary(LibrarySpec) returns (codeio.ir.Graph); // a library's surface -> IR nodes
+  rpc ListRecipes(Empty) returns (RecipeList);            // known grammar+rule recipes
+}
+message AdapterSpec {
+  string language = 1;
+  string grammar_ref = 2;        // tree-sitter grammar (name@version or url)
+  string mapping_rules = 3;      // ruleset: grammar productions -> IR NodeKinds + attrs
+  Fidelity target_fidelity = 4;
+}
+message LibrarySpec {
+  string language = 1;
+  string library = 2;            // package name
+  string surface = 3;            // headers / signatures / public API to lift
+}
+message RecipeList { repeated AdapterSpec recipes = 1; }
