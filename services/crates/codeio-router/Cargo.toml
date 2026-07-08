@@ -1,0 +1,8 @@
+[package]
+name    = "codeio-router"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codeio-ir = { path = "../codeio-ir" }
+codeio-lang = { path = "../codeio-lang" }

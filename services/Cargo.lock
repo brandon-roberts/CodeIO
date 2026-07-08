@@ -322,6 +322,14 @@ name = "codeio-lang"
 version = "0.1.0"
 
 [[package]]
+name = "codeio-router"
+version = "0.1.0"
+dependencies = [
+ "codeio-ir",
+ "codeio-lang",
+]
+
+[[package]]
 name = "codeio-spotlight"
 version = "0.1.0"
 dependencies = [

@@ -2,6 +2,8 @@
 members = [
     "crates/codeio-lang",
     "crates/codeio-ir",
+    "crates/codeio-router",
+    "crates/codeio-router",
     "crates/codeio-cli",
   "crates/codeio-common",
   "crates/codeio-index",

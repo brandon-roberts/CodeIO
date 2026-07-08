@@ -328,3 +328,19 @@ pillar = "P6/P8"
 status = "building"
 entry = "proto/lang/adapter.proto"
 desc = "Factory contract: build a LanguageAdapter from a tree-sitter grammar + IR mapping ruleset; PortLibrary lifts a library's public surface into IR nodes. Mass-production path for polyglot scaling."
+
+[[feature]]
+id = "router"
+name = "Routing & indexing engine (selector/router/index, tier-normalized)"
+pillar = "P6/P8"
+status = "live"
+entry = "services/crates/codeio-router"
+desc = "Match+route+index only (no code writing): L0 pure selector matching, L1 relative/dynamic routing with cascade, L2 bidirectional IR<->location index + replayable trace. Doubles as UI style-mapping engine. 9 tests."
+
+[[feature]]
+id = "workbench"
+name = "Visual workbench (blueprint designer, semantic zoom)"
+pillar = "P5/P8"
+status = "planned"
+entry = "docs/workbench-vision.md"
+desc = "Self-hosting blueprint tool; HTML/CSS/JS designer chrome; semantic zoom blueprint->UPL->lower-constructs->source as IR-tier projections; router index links zoom levels; trace log = live stack trace."
