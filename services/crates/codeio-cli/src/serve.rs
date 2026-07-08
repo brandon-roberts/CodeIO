@@ -263,52 +263,103 @@ async function loadStatus(){ try{ const r=await fetch('/status'); const d=await 
   feats.innerHTML=d.features.map(f=>`<div class="feat"><span>${f.name}</span><span class="badge ${f.status}">${f.status}</span></div>`).join('');
 }catch(e){ feats.textContent='err: '+e; } }
 
-// ---- Blueprint canvas: real IR graph ----
-let G={nodes:[],roots:[]}, view={x:20,y:20,s:1};
+// ---- Blueprint: engineering-drawing renderer over the real IR ----
+let G={nodes:[],roots:[]}, view={x:30,y:60,s:1};
 const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
-const KCOL={LITERAL:'#3fb950',REF:'#4a9eff',CALL:'#d29922',FN:'#f78166',QUERY:'#a371f7',TABLE_DEF:'#56d4dd',RECORD:'#db61a2',EFFECT:'#8b949e',MATCH:'#e3b341'};
+// drafting palette per construct
+const SYM={
+  FN:       {shape:'ported', col:'#f78166', tag:'FUNC'},
+  CALL:     {shape:'process',col:'#d29922', tag:'PROC'},
+  QUERY:    {shape:'io',     col:'#a371f7', tag:'QUERY'},
+  TABLE_DEF:{shape:'store',  col:'#56d4dd', tag:'TABLE'},
+  RECORD:   {shape:'record', col:'#db61a2', tag:'REC'},
+  MATCH:    {shape:'decision',col:'#e3b341',tag:'BRANCH'},
+  LITERAL:  {shape:'terminal',col:'#3fb950',tag:'VAL'},
+  REF:      {shape:'terminal',col:'#4a9eff',tag:'REF'},
+  EFFECT:   {shape:'process',col:'#8b949e', tag:'EFF'},
+};
+const NW=140, NH=56, GAPX=190, GAPY=120;
 async function draw(){ const d=await post('/ir',code.value);
   if(!d.ok){ document.getElementById('bpinfo').textContent='error: '+d.error; return; }
   G=d; layout(); fit(); render();
-  document.getElementById('bpinfo').textContent=d.count+' IR nodes, '+d.roots.length+' roots — colored by kind';
+  document.getElementById('bpinfo').textContent=d.count+' components · '+d.roots.length+' roots · engineering view';
 }
-function layout(){ // simple layered layout by BFS depth from roots
-  const pos={}, depth={}, byId={}; G.nodes.forEach(n=>byId[n.id]=n);
-  let q=G.roots.map(r=>[r,0]); const seen={};
-  while(q.length){ const [id,d]=q.shift(); if(seen[id])continue; seen[id]=1; depth[id]=d;
-    (byId[id]?.children||[]).forEach(c=>{ if(!seen[c]) q.push([c,d+1]); }); }
-  const rows={}; G.nodes.forEach(n=>{ const d=depth[n.id]??0; (rows[d]=rows[d]||[]).push(n.id); });
-  Object.keys(rows).forEach(d=>{ rows[d].forEach((id,i)=>{ pos[id]={x:i*150,y:d*90}; }); });
+function layout(){ const byId={}; G.nodes.forEach(n=>byId[n.id]=n);
+  const depth={}, seen={}; let q=G.roots.map(r=>[r,0]);
+  while(q.length){ const [id,dp]=q.shift(); if(seen[id])continue; seen[id]=1; depth[id]=dp;
+    (byId[id]?.children||[]).forEach(c=>{ if(!seen[c])q.push([c,dp+1]); }); }
+  const rows={}; G.nodes.forEach(n=>{ const dp=depth[n.id]??0; (rows[dp]=rows[dp]||[]).push(n.id); });
+  const pos={}; Object.keys(rows).forEach(dp=>{ rows[dp].forEach((id,i)=>{ pos[id]={x:i*GAPX,y:dp*GAPY}; }); });
   G.pos=pos; G.byId=byId;
 }
-function fit(){ if(!G.nodes.length)return; let xs=Object.values(G.pos).map(p=>p.x), ys=Object.values(G.pos).map(p=>p.y);
-  const w=Math.max(...xs)+140, h=Math.max(...ys)+80; view.s=Math.min(cv.width/w, cv.height/h, 1.2)||1;
-  view.x=20; view.y=20; render(); }
+function fit(){ if(!G.nodes.length)return; const xs=Object.values(G.pos).map(p=>p.x),ys=Object.values(G.pos).map(p=>p.y);
+  const w=Math.max(...xs)+NW+60,h=Math.max(...ys)+NH+60; view.s=Math.min(cv.clientWidth/w,cv.clientHeight/h,1.3)||1;
+  view.x=30; view.y=60; render(); }
 function render(){ const dpr=window.devicePixelRatio||1; cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cv.clientWidth,cv.clientHeight);
+  drawGrid(); drawTitleBlock();
   ctx.save(); ctx.translate(view.x,view.y); ctx.scale(view.s,view.s);
-  // edges
-  ctx.strokeStyle='#30363d'; ctx.lineWidth=1.5;
-  G.nodes.forEach(n=>{ const a=G.pos[n.id]; (n.children||[]).forEach(c=>{ const b=G.pos[c]; if(a&&b){
-    ctx.beginPath(); ctx.moveTo(a.x+60,a.y+30); ctx.lineTo(b.x+60,b.y); ctx.stroke(); }}); });
-  // nodes
-  G.nodes.forEach(n=>{ const p=G.pos[n.id]; if(!p)return; const col=KCOL[n.kind]||'#8b949e';
-    ctx.fillStyle='#161b22'; ctx.strokeStyle=col; ctx.lineWidth=2;
-    roundRect(p.x,p.y,120,44,8); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=col; ctx.font='bold 10px monospace'; ctx.fillText(n.kind, p.x+8, p.y+16);
-    ctx.fillStyle='#e6edf3'; ctx.font='11px monospace';
-    ctx.fillText((n.label||'').slice(0,14), p.x+8, p.y+32); });
+  // orthogonal ported connectors first (under nodes)
+  G.nodes.forEach(n=>{ const a=G.pos[n.id]; if(!a)return;
+    (n.children||[]).forEach(c=>{ const b=G.pos[c]; if(!b)return; connector(a,b); }); });
+  // components
+  G.nodes.forEach(n=>{ const p=G.pos[n.id]; if(!p)return; component(n,p); });
   ctx.restore();
+  drawLegend();
 }
-function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+function drawGrid(){ ctx.save(); ctx.strokeStyle='#131820'; ctx.lineWidth=1; const step=28*view.s;
+  const ox=view.x%step, oy=view.y%step;
+  for(let x=ox;x<cv.clientWidth;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cv.clientHeight);ctx.stroke();}
+  for(let y=oy;y<cv.clientHeight;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.clientWidth,y);ctx.stroke();}
+  ctx.restore(); }
+function drawTitleBlock(){ ctx.save(); ctx.fillStyle='#0d1117'; ctx.strokeStyle='#30363d'; ctx.lineWidth=1;
+  ctx.fillRect(0,0,cv.clientWidth,34); ctx.strokeRect(0,0,cv.clientWidth,34);
+  ctx.fillStyle='#e6edf3'; ctx.font='bold 12px monospace'; ctx.fillText('CodeIO · BLUEPRINT', 10, 22);
+  ctx.fillStyle='#8b949e'; ctx.font='10px monospace';
+  ctx.fillText('components: '+(G.nodes?.length||0)+'   scale: '+view.s.toFixed(2)+'x   sheet 1/1', cv.clientWidth-260, 22);
+  ctx.restore(); }
+function drawLegend(){ const items=[['FUNC','#f78166'],['PROC','#d29922'],['QUERY','#a371f7'],['TABLE','#56d4dd'],['BRANCH','#e3b341'],['VAL/REF','#3fb950']];
+  ctx.save(); const bx=8,by=cv.clientHeight-18-items.length*14, bw=110, bh=items.length*14+10;
+  ctx.fillStyle='rgba(13,17,23,0.9)'; ctx.strokeStyle='#30363d'; ctx.fillRect(bx,by,bw,bh); ctx.strokeRect(bx,by,bw,bh);
+  ctx.font='9px monospace'; items.forEach((it,i)=>{ ctx.fillStyle=it[1]; ctx.fillRect(bx+6,by+8+i*14,10,8);
+    ctx.fillStyle='#c9d1d9'; ctx.fillText(it[0], bx+22, by+16+i*14); }); ctx.restore(); }
+// orthogonal connector: output port (bottom-center of parent) -> input port (top-center of child)
+function connector(a,b){ const x1=a.x+NW/2, y1=a.y+NH, x2=b.x+NW/2, y2=b.y; const my=(y1+y2)/2;
+  ctx.strokeStyle='#4a5568'; ctx.lineWidth=1.5; ctx.beginPath();
+  ctx.moveTo(x1,y1); ctx.lineTo(x1,my); ctx.lineTo(x2,my); ctx.lineTo(x2,y2-6); ctx.stroke();
+  // arrowhead
+  ctx.fillStyle='#4a5568'; ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-4,y2-7); ctx.lineTo(x2+4,y2-7); ctx.closePath(); ctx.fill(); }
+function component(n,p){ const s=SYM[n.kind]||{shape:'process',col:'#8b949e',tag:n.kind};
+  ctx.lineWidth=2; ctx.strokeStyle=s.col; ctx.fillStyle='#161b22';
+  const x=p.x,y=p.y,w=NW,h=NH;
+  switch(s.shape){
+    case 'store': // data-store cylinder
+      ctx.beginPath(); ctx.ellipse(x+w/2,y+8,w/2,8,0,0,Math.PI*2); ctx.moveTo(x,y+8); ctx.lineTo(x,y+h-8);
+      ctx.ellipse(x+w/2,y+h-8,w/2,8,0,0,Math.PI); ctx.lineTo(x+w,y+8); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x+w/2,y+8,w/2,8,0,0,Math.PI*2); ctx.stroke(); break;
+    case 'decision': // diamond
+      ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w,y+h/2); ctx.lineTo(x+w/2,y+h); ctx.lineTo(x,y+h/2); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    case 'io': case 'query': // parallelogram
+      ctx.beginPath(); ctx.moveTo(x+16,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w-16,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    case 'terminal': // rounded pill
+      rr(x,y,w,h,h/2); ctx.fill(); ctx.stroke(); break;
+    case 'ported': // function block with ports
+      rr(x,y,w,h,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=s.col; ctx.fillRect(x-4,y+h/2-5,4,10); ctx.fillRect(x+w,y+h/2-5,4,10); break;
+    default: // process rectangle
+      rr(x,y,w,h,4); ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle=s.col; ctx.font='bold 9px monospace'; ctx.fillText(s.tag, x+10, y+16);
+  ctx.fillStyle='#e6edf3'; ctx.font='11px monospace'; ctx.fillText((n.label||'').slice(0,15), x+10, y+34);
+}
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
   ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-// pan & pinch-zoom
-let drag=null, pinch=null;
-cv.addEventListener('touchstart',e=>{ if(e.touches.length===1){drag={x:e.touches[0].clientX-view.x,y:e.touches[0].clientY-view.y};}
-  else if(e.touches.length===2){ pinch=dist(e); } },{passive:true});
-cv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){ view.x=e.touches[0].clientX-drag.x; view.y=e.touches[0].clientY-drag.y; render(); }
-  else if(e.touches.length===2&&pinch){ const d=dist(e); view.s*=d/pinch; pinch=d; render(); } },{passive:true});
+let drag=null,pinch=null;
+cv.addEventListener('touchstart',e=>{ if(e.touches.length===1)drag={x:e.touches[0].clientX-view.x,y:e.touches[0].clientY-view.y};
+  else if(e.touches.length===2)pinch=dist(e); },{passive:true});
+cv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){view.x=e.touches[0].clientX-drag.x;view.y=e.touches[0].clientY-drag.y;render();}
+  else if(e.touches.length===2&&pinch){const d=dist(e);view.s=Math.max(0.2,Math.min(3,view.s*d/pinch));pinch=d;render();} },{passive:true});
 cv.addEventListener('touchend',()=>{drag=null;pinch=null;});
-function dist(e){ const dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY; return Math.hypot(dx,dy); }
+function dist(e){ const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY; return Math.hypot(dx,dy); }
 </script>
 </body></html>"#;
