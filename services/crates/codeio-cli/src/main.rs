@@ -35,6 +35,8 @@ enum Cmd {
     Repl,
     /// Scan the environment: toolchains, services, AI backends — go/no-go report
     Doctor,
+    /// Interactive menu (friendly for phones / Termux)
+    Menu,
     /// Show feature registry (live / building / planned)
     Features {
         /// Only show features with this status
@@ -74,6 +76,7 @@ fn main() {
         Cmd::Run { file } => run_file(&file),
         Cmd::Repl => repl(),
         Cmd::Doctor => doctor(),
+        Cmd::Menu => menu(&root),
         Cmd::Features { status } => features(&root, status.as_deref()),
     }
 }
@@ -110,6 +113,66 @@ fn probe_cmd(args: &[&str]) -> Option<String> {
 
 fn probe_http(addr: &str) -> bool {
     TcpStream::connect_timeout(&addr.parse().expect("addr"), Duration::from_millis(500)).is_ok()
+}
+
+fn menu(root: &Path) {
+    use std::io::{BufRead, Write};
+    let stdin = std::io::stdin();
+    loop {
+        println!("
+╔══════════════════════════════╗");
+        println!("║        CodeIO  ·  menu       ║");
+        println!("╚══════════════════════════════╝");
+        println!("  1) Run an example");
+        println!("  2) Open REPL");
+        println!("  3) System check (doctor)");
+        println!("  4) Feature status");
+        println!("  5) Run a file by path");
+        println!("  q) Quit");
+        print!("
+choose> ");
+        std::io::stdout().flush().ok();
+        let mut line = String::new();
+        if stdin.lock().read_line(&mut line).unwrap_or(0) == 0 { break; }
+        match line.trim() {
+            "1" => {
+                let ex = root.join("examples");
+                let mut files: Vec<_> = std::fs::read_dir(&ex)
+                    .map(|d| d.filter_map(|e| e.ok().map(|e| e.path()))
+                        .filter(|p| p.extension().map_or(false, |x| x == "cio")).collect())
+                    .unwrap_or_default();
+                files.sort();
+                if files.is_empty() { println!("(no examples found)"); continue; }
+                for (i, f) in files.iter().enumerate() {
+                    println!("  {}) {}", i + 1, f.file_name().unwrap().to_string_lossy());
+                }
+                print!("example> ");
+                std::io::stdout().flush().ok();
+                let mut c = String::new();
+                stdin.lock().read_line(&mut c).ok();
+                if let Ok(n) = c.trim().parse::<usize>() {
+                    if let Some(f) = files.get(n.wrapping_sub(1)) {
+                        println!("── running {} ──", f.file_name().unwrap().to_string_lossy());
+                        run_file(f);
+                    }
+                }
+            }
+            "2" => repl(),
+            "3" => { let _ = std::panic::catch_unwind(doctor); }
+            "4" => features(root, None),
+            "5" => {
+                print!("path> ");
+                std::io::stdout().flush().ok();
+                let mut p = String::new();
+                stdin.lock().read_line(&mut p).ok();
+                let p = p.trim();
+                if !p.is_empty() { run_file(Path::new(p)); }
+            }
+            "q" | "quit" | "exit" => break,
+            other => println!("? unknown choice '{other}'"),
+        }
+    }
+    println!("bye");
 }
 
 fn doctor() {

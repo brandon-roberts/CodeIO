@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-07 — 5 live · 9 building · 21 planned_
+_Regenerated 2026-07-08 — 6 live · 9 building · 21 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -13,6 +13,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **Minimal interpreter (M2)** | P1/P6 | `services/crates/codeio-lang` | Lexer, Pratt parser, tree-walking interpreter with closures; codeio run + codeio repl; 9-test suite green. Tables/ai/meta/bridges land next. |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
 | ✅ LIVE | **Evolution architecture model (tiers + coherence plugins)** | P1/P8 | `docs/architecture-model.md` | L0/L1/L2 normalization; no lateral coupling; parts bound only by higher-tier coherence plugins. |
+| ✅ LIVE | **Android/Termux runner (setup script + cio menu)** | P5 | `tools/termux` | One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud. |
 | 🚧 BUILDING | **Dependency map service** | P1 | `services/crates/codeio-depmap` | Import/dependency graph resolver. |
 | 🚧 BUILDING | **Language spec v0 (M1)** | P2/P3/P4 | `docs/language-spec.md` | Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms. |
 | 🚧 BUILDING | **Workspace indexer service** | P3 | `services/crates/codeio-index` | Scans workspaces into content-addressed IndexEntry chunks with symbol records. Compiles; needs tests + end-to-end exercise. |

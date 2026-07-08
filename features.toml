@@ -288,3 +288,11 @@ pillar = "P7"
 status = "building"
 entry = "proto/p2p/blockstream.proto"
 desc = "FrostWire-for-compute transport: one long-lived outbound device stream multiplexed by stream_id; HEADER declares context once, lean BODY blocks, nested sub-streams, CLOSER integrity; bidirectional dispatch/result over carrier NAT."
+
+[[feature]]
+id = "termux"
+name = "Android/Termux runner (setup script + cio menu)"
+pillar = "P5"
+status = "live"
+entry = "tools/termux"
+desc = "One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud."
