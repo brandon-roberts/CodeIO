@@ -7,6 +7,8 @@
 //!
 //! Future (per ROADMAP.md): `codeio run <file.cio>`, `codeio repl`, `codeio ide`.
 
+mod serve;
+
 use clap::{Parser, Subcommand};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
@@ -45,6 +47,12 @@ enum Cmd {
     Doctor,
     /// Interactive menu (friendly for phones / Termux)
     Menu,
+    /// Run the web IDE server (open in a browser, incl. from your phone)
+    Serve {
+        /// Address to bind, e.g. 0.0.0.0:4000 for LAN access
+        #[arg(long, default_value = "0.0.0.0:4000")]
+        bind: String,
+    },
     /// Show feature registry (live / building / planned)
     Features {
         /// Only show features with this status
@@ -86,6 +94,7 @@ fn main() {
         Cmd::Ir { file, full } => show_ir(&file, full),
         Cmd::Doctor => doctor(),
         Cmd::Menu => menu(&root),
+        Cmd::Serve { bind } => serve::serve(&bind),
         Cmd::Features { status } => features(&root, status.as_deref()),
     }
 }

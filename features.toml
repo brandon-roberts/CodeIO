@@ -227,11 +227,11 @@ desc = "Every mainstream language reachable two ways: tree-sitter lifting into t
 
 [[feature]]
 id = "app-server"
-name = "codeio serve (application server mode)"
-pillar = "P1/P7"
-status = "planned"
-entry = "-"
-desc = "Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams."
+name = "codeio serve (web IDE + app server)"
+pillar = "P1/P5/P7"
+status = "live"
+entry = "services/crates/codeio-cli/src/serve.rs"
+desc = "Std-only HTTP server (no framework, builds on Termux): serves a browser IDE with live Run + View-IR over the engine; binds 0.0.0.0 for LAN/phone access. Host for the GUI IDE and future mesh coordinator."
 
 [[feature]]
 id = "doctor"

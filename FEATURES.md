@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 9 live · 12 building · 23 planned_
+_Regenerated 2026-07-08 — 10 live · 12 building · 22 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -11,6 +11,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **codeio CLI (main entry point)** | P1 | `services/crates/codeio-cli` | Single entry point: start services, check status, list features. `cargo run -p codeio-cli -- --help` |
 | ✅ LIVE | **codeio doctor (system analyzer, go/no-go)** | P1 | `services/crates/codeio-cli` | Scans toolchains (Rust/protoc/python/git/node/ghc/g++), AI backends (Ollama), and CodeIO services; per-OS install hints; exits nonzero on NO-GO for CI use. |
 | ✅ LIVE | **Dynamic value library (interned, dedup, vault backend)** | P1/P3 | `services/crates/codeio-values` | Static values interned + content-addressed + deduplicated, referenced by id not embedded (normalization payoff). Pluggable backend: memory or encrypted vault (audited-crypto-only, no hand-rolled). 4 tests. |
+| ✅ LIVE | **codeio serve (web IDE + app server)** | P1/P5/P7 | `services/crates/codeio-cli/src/serve.rs` | Std-only HTTP server (no framework, builds on Termux): serves a browser IDE with live Run + View-IR over the engine; binds 0.0.0.0 for LAN/phone access. Host for the GUI IDE and future mesh coordinator. |
 | ✅ LIVE | **Minimal interpreter (M2)** | P1/P6 | `services/crates/codeio-lang` | Lexer, Pratt parser, tree-walking interpreter with closures; codeio run + codeio repl; 9-test suite green. Tables/ai/meta/bridges land next. |
 | ✅ LIVE | **Canonical shared IR (materialized in engine)** | P1/P6/P8 | `services/crates/codeio-ir` | The single content-addressed IR: 12 node kinds, per-node provenance + metadata, content-address dedup, kind-histogram self-analysis. Materializes any .cio program; `codeio ir <file>` shows the graph. Tested. |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
@@ -30,7 +31,6 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | 🚧 BUILDING | **Block-stream transport (nested header/body/closer, context-once)** | P7 | `proto/p2p/blockstream.proto` | FrostWire-for-compute transport: one long-lived outbound device stream multiplexed by stream_id; HEADER declares context once, lean BODY blocks, nested sub-streams, CLOSER integrity; bidirectional dispatch/result over carrier NAT. |
 | 🚧 BUILDING | **Architecture Authority (conformance refs + escalation)** | P9 | `VISION.md` | Developer-as-author doctrine: AI in conformance/escalation modes only; IR nodes cite the authorizing artifact; practiced now, enforced mechanically once IR lands. |
 | 📋 PLANNED | **C++ VM with hot swap (M11)** | P1 | `proto/vm/` | Bytecode interpreter with live code swap + state inspection. |
-| 📋 PLANNED | **codeio serve (application server mode)** | P1/P7 | `—` | Long-running server: hosts the UPL engine, serves the IDE web shell and APIs over LAN/Tailscale; the deployment form for phones and teams. |
 | 📋 PLANNED | **cio pkg (UPL package manager)** | P1/P8 | `—` | Internal package manager for .cio libraries and bridges: content-addressed packages, version resolution, lockfiles; the registry protocol doubles as the P7 mesh distribution channel. |
 | 📋 PLANNED | **Lisp macro/DSL layer** | P2/P8 | `proto/meta/` | Macro expansion, DSL framework, homoiconic quasi-quote services. |
 | 📋 PLANNED | **Table-native data engine (M5)** | P3 | `—` | Typed schemas, relations, live queries, power-forms; wired into the Spotlight index. |
