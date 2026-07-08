@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 10 live · 12 building · 22 planned_
+_Regenerated 2026-07-08 — 11 live · 12 building · 22 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -16,6 +16,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **Canonical shared IR (materialized in engine)** | P1/P6/P8 | `services/crates/codeio-ir` | The single content-addressed IR: 12 node kinds, per-node provenance + metadata, content-address dedup, kind-histogram self-analysis. Materializes any .cio program; `codeio ir <file>` shows the graph. Tested. |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
 | ✅ LIVE | **Evolution architecture model (tiers + coherence plugins)** | P1/P8 | `docs/architecture-model.md` | L0/L1/L2 normalization; no lateral coupling; parts bound only by higher-tier coherence plugins. |
+| ✅ LIVE | **Declarative data-view layer (filters/sort/pagination)** | P3/P5 | `services/crates/codeio-view` | ViewSpec describes a table view as data (source, columns, filters, sort, pagination); execute() runs it over generic rows into a paginated Page + JSON. Probe data through UI, not code. Decoupled (std-only, any data source). 6 tests. |
 | ✅ LIVE | **Android/Termux runner (setup script + cio menu)** | P5 | `tools/termux` | One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud. |
 | ✅ LIVE | **Routing & indexing engine (selector/router/index, tier-normalized)** | P6/P8 | `services/crates/codeio-router` | Match+route+index only (no code writing): L0 pure selector matching, L1 relative/dynamic routing with cascade, L2 bidirectional IR<->location index + replayable trace. Doubles as UI style-mapping engine. 9 tests. |
 | 🚧 BUILDING | **Dependency map service** | P1 | `services/crates/codeio-depmap` | Import/dependency graph resolver. |

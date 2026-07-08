@@ -360,3 +360,11 @@ pillar = "P1"
 status = "building"
 entry = "services/crates/codeio-ir"
 desc = "Executes directly from the content-addressed IR graph, closing the IR<->execution loop (graph edits change what runs). v0: literals/refs/calls/arithmetic; full tree-walker parity grows as IR carries scope. 7 tests."
+
+[[feature]]
+id = "view-spec"
+name = "Declarative data-view layer (filters/sort/pagination)"
+pillar = "P3/P5"
+status = "live"
+entry = "services/crates/codeio-view"
+desc = "ViewSpec describes a table view as data (source, columns, filters, sort, pagination); execute() runs it over generic rows into a paginated Page + JSON. Probe data through UI, not code. Decoupled (std-only, any data source). 6 tests."
