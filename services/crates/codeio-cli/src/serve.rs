@@ -66,6 +66,7 @@ fn route(method: &str, path: &str, body: &str) -> (&'static str, &'static str, S
         ("GET", "/") => ("200 OK", "text/html; charset=utf-8", INDEX_HTML.to_string()),
         ("POST", "/run") => ("200 OK", "application/json", api_run(body)),
         ("POST", "/ir") => ("200 OK", "application/json", api_ir(body)),
+        ("GET", "/status") => ("200 OK", "application/json", api_status()),
         _ => ("404 Not Found", "text/plain", "not found".into()),
     }
 }
@@ -134,13 +135,48 @@ fn api_ir(body: &str) -> String {
         Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", json_escape(&e)),
     };
     let g = codeio_ir::lower(&stmts);
-    let mut hist = String::from("{");
-    for (i, (k, c)) in g.kind_histogram().iter().enumerate() {
-        if i > 0 { hist.push(','); }
-        hist.push_str(&format!("\"{k}\":{c}"));
+    // full node list with kind, attrs summary, children — for the blueprint canvas
+    let mut nodes = String::from("[");
+    let mut ids: Vec<&String> = g.nodes.keys().collect();
+    ids.sort();
+    for (i, id) in ids.iter().enumerate() {
+        let n = &g.nodes[*id];
+        if i > 0 { nodes.push(','); }
+        let label = n.attrs.get("name").or(n.attrs.get("op")).or(n.attrs.get("value"))
+            .or(n.attrs.get("binding")).cloned().unwrap_or_default();
+        let kids: Vec<String> = n.children.iter().map(|c| format!("\"{}\"", &c[..8.min(c.len())])).collect();
+        nodes.push_str(&format!(
+            "{{\"id\":\"{}\",\"kind\":\"{}\",\"label\":\"{}\",\"children\":[{}]}}",
+            &id[..8.min(id.len())], n.kind.as_str(), json_escape(&label), kids.join(",")));
     }
-    hist.push('}');
-    format!("{{\"ok\":true,\"nodes\":{},\"roots\":{},\"histogram\":{}}}", g.len(), g.roots.len(), hist)
+    nodes.push(']');
+    let roots: Vec<String> = g.roots.iter().map(|r| format!("\"{}\"", &r[..8.min(r.len())])).collect();
+    format!("{{\"ok\":true,\"count\":{},\"roots\":[{}],\"nodes\":{}}}", g.len(), roots.join(","), nodes)
+}
+
+fn api_status() -> String {
+    // read features.toml (repo root discovered by walking up) to show real system state
+    let mut dir = std::env::current_dir().unwrap_or_default();
+    let mut path = None;
+    loop {
+        let p = dir.join("features.toml");
+        if p.exists() { path = Some(p); break; }
+        if !dir.pop() { break; }
+    }
+    let text = path.and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+    // crude TOML scan: collect (name,status) pairs
+    let mut items: Vec<(String,String)> = Vec::new();
+    let (mut name, mut status) = (String::new(), String::new());
+    for line in text.lines() {
+        let l = line.trim();
+        if l.starts_with("name") { name = l.splitn(2,'=').nth(1).unwrap_or("").trim().trim_matches('"').to_string(); }
+        if l.starts_with("status") { status = l.splitn(2,'=').nth(1).unwrap_or("").trim().trim_matches('"').to_string();
+            if !name.is_empty() { items.push((name.clone(), status.clone())); } }
+    }
+    let (mut live, mut building, mut planned) = (0,0,0);
+    for (_,s) in &items { match s.as_str() { "live"=>live+=1, "building"=>building+=1, _=>planned+=1 } }
+    let arr: Vec<String> = items.iter().map(|(n,s)| format!("{{\"name\":\"{}\",\"status\":\"{}\"}}", json_escape(n), s)).collect();
+    format!("{{\"live\":{live},\"building\":{building},\"planned\":{planned},\"features\":[{}]}}", arr.join(","))
 }
 
 const INDEX_HTML: &str = r#"<!DOCTYPE html>
@@ -148,62 +184,131 @@ const INDEX_HTML: &str = r#"<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CodeIO</title>
 <style>
-  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --accent:#4a9eff; --muted:#8b949e; }
-  * { box-sizing:border-box; }
   html,body { margin:0; padding:0; min-height:100%; background:#0d1117; color:#e6edf3;
               -webkit-backface-visibility:hidden; overflow-x:hidden; }
-  body { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; -webkit-text-fill-color:#e6edf3; }
-  header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  body { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  header { padding:12px 16px; border-bottom:1px solid #30363d; display:flex; align-items:center; gap:10px; }
   header h1 { font-size:16px; margin:0; letter-spacing:1px; }
-  header .tag { color:var(--muted); font-size:12px; }
-  main { padding:12px; max-width:900px; margin:0 auto; }
-  textarea { width:100%; height:300px; background:var(--panel); color:var(--fg); border:1px solid var(--border);
+  header .tag { color:#8b949e; font-size:11px; }
+  .tabs { display:flex; border-bottom:1px solid #30363d; }
+  .tabs button { flex:1; padding:12px; background:#0d1117; color:#8b949e; border:0; border-bottom:2px solid transparent;
+                 font:inherit; font-size:13px; font-weight:700; }
+  .tabs button.on { color:#e6edf3; border-bottom-color:#4a9eff; }
+  main { padding:12px; max-width:960px; margin:0 auto; }
+  .view { display:none; } .view.on { display:block; }
+  textarea { width:100%; height:280px; background:#161b22; color:#e6edf3; border:1px solid #30363d;
              border-radius:8px; padding:12px; font:inherit; font-size:16px; resize:vertical;
-             -webkit-appearance:none; transform:none; backface-visibility:hidden; }
+             -webkit-appearance:none; backface-visibility:hidden; }
   .row { display:flex; gap:8px; margin:10px 0; }
-  button { flex:1; padding:12px; background:var(--accent); color:#001; border:0; border-radius:8px;
-           font:inherit; font-weight:700; font-size:14px; }
-  button.alt { background:var(--panel); color:var(--fg); border:1px solid var(--border); }
-  pre { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;
-        white-space:pre-wrap; word-break:break-word; min-height:60px; font-size:13px; }
-  .lbl { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
+  button.act { flex:1; padding:12px; background:#4a9eff; color:#001; border:0; border-radius:8px; font:inherit; font-weight:700; }
+  button.alt { flex:1; padding:12px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:8px; font:inherit; font-weight:700; }
+  pre { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; white-space:pre-wrap;
+        word-break:break-word; min-height:50px; font-size:13px; }
+  canvas { width:100%; height:60vh; background:#0a0d12; border:1px solid #30363d; border-radius:8px; touch-action:none; }
+  .lbl { color:#8b949e; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
+  .feat { display:flex; justify-content:space-between; padding:8px 10px; border:1px solid #30363d;
+          border-radius:6px; margin:4px 0; background:#161b22; font-size:12px; }
+  .badge { font-weight:700; } .live{color:#3fb950;} .building{color:#d29922;} .planned{color:#8b949e;}
+  .counts { display:flex; gap:8px; margin:8px 0; }
+  .counts div { flex:1; text-align:center; padding:10px; border:1px solid #30363d; border-radius:8px; background:#161b22; }
+  .counts .n { font-size:22px; font-weight:700; } .counts .k { font-size:10px; color:#8b949e; text-transform:uppercase; }
 </style></head>
 <body>
-<header><h1>CodeIO</h1><span class="tag">universal language · running live</span></header>
+<header><h1>CodeIO</h1><span class="tag">universal language · live</span></header>
+<div class="tabs">
+  <button class="on" onclick="tab('edit',this)">Editor</button>
+  <button onclick="tab('bp',this)">Blueprint</button>
+  <button onclick="tab('sys',this)">System</button>
+</div>
 <main>
-  <textarea id="code">table Trades { sym: Str, qty: Int, buy: Bool }
+  <section id="edit" class="view on">
+    <textarea id="code">table Trades { sym: Str, qty: Int, buy: Bool }
 insert Trades { sym: "AAPL", qty: 10, buy: true }
 insert Trades { sym: "BTC", qty: 2, buy: false }
 
+fn total(a, b) { a + b }
 let buys = from t in Trades where t.buy select t.sym
 print("buys:", buys)</textarea>
-  <div class="row">
-    <button onclick="run()">Run</button>
-    <button class="alt" onclick="showIr()">View IR</button>
-  </div>
-  <div class="lbl">Result</div>
-  <pre id="out">ready.</pre>
+    <div class="row"><button class="act" onclick="run()">Run</button>
+      <button class="alt" onclick="tab('bp',document.querySelectorAll('.tabs button')[1]); draw()">Blueprint</button></div>
+    <div class="lbl">Result</div><pre id="out">ready.</pre>
+  </section>
+
+  <section id="bp" class="view">
+    <div class="lbl">Blueprint — live IR graph (pinch/drag to zoom & pan)</div>
+    <canvas id="cv"></canvas>
+    <div class="row"><button class="alt" onclick="draw()">Refresh from code</button>
+      <button class="alt" onclick="fit()">Fit</button></div>
+    <pre id="bpinfo">tap "Refresh from code" to render the IR of your program.</pre>
+  </section>
+
+  <section id="sys" class="view">
+    <div class="lbl">System status — what is actually live</div>
+    <div class="counts"><div><div class="n live" id="cl">-</div><div class="k">live</div></div>
+      <div><div class="n building" id="cb">-</div><div class="k">building</div></div>
+      <div><div class="n planned" id="cp">-</div><div class="k">planned</div></div></div>
+    <div id="feats"></div>
+  </section>
 </main>
 <script>
-async function post(path, code) {
-  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({code})});
-  return r.json();
+function tab(id, btn){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on')); if(btn)btn.classList.add('on');
+  if(id==='sys') loadStatus(); }
+async function post(p,code){ const r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})}); return r.json(); }
+async function run(){ document.getElementById('out').textContent='running...';
+  try{ const d=await post('/run',code.value); document.getElementById('out').textContent=d.ok?('=> '+d.result):('error: '+d.error);}catch(e){document.getElementById('out').textContent='err: '+e;} }
+async function loadStatus(){ try{ const r=await fetch('/status'); const d=await r.json();
+  cl.textContent=d.live; cb.textContent=d.building; cp.textContent=d.planned;
+  feats.innerHTML=d.features.map(f=>`<div class="feat"><span>${f.name}</span><span class="badge ${f.status}">${f.status}</span></div>`).join('');
+}catch(e){ feats.textContent='err: '+e; } }
+
+// ---- Blueprint canvas: real IR graph ----
+let G={nodes:[],roots:[]}, view={x:20,y:20,s:1};
+const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
+const KCOL={LITERAL:'#3fb950',REF:'#4a9eff',CALL:'#d29922',FN:'#f78166',QUERY:'#a371f7',TABLE_DEF:'#56d4dd',RECORD:'#db61a2',EFFECT:'#8b949e',MATCH:'#e3b341'};
+async function draw(){ const d=await post('/ir',code.value);
+  if(!d.ok){ document.getElementById('bpinfo').textContent='error: '+d.error; return; }
+  G=d; layout(); fit(); render();
+  document.getElementById('bpinfo').textContent=d.count+' IR nodes, '+d.roots.length+' roots — colored by kind';
 }
-async function run() {
-  document.getElementById('out').textContent = 'running...';
-  try { const d = await post('/run', document.getElementById('code').value);
-    document.getElementById('out').textContent = d.ok ? ('=> ' + d.result) : ('error: ' + d.error);
-  } catch(e){ document.getElementById('out').textContent = 'connection error: ' + e; }
+function layout(){ // simple layered layout by BFS depth from roots
+  const pos={}, depth={}, byId={}; G.nodes.forEach(n=>byId[n.id]=n);
+  let q=G.roots.map(r=>[r,0]); const seen={};
+  while(q.length){ const [id,d]=q.shift(); if(seen[id])continue; seen[id]=1; depth[id]=d;
+    (byId[id]?.children||[]).forEach(c=>{ if(!seen[c]) q.push([c,d+1]); }); }
+  const rows={}; G.nodes.forEach(n=>{ const d=depth[n.id]??0; (rows[d]=rows[d]||[]).push(n.id); });
+  Object.keys(rows).forEach(d=>{ rows[d].forEach((id,i)=>{ pos[id]={x:i*150,y:d*90}; }); });
+  G.pos=pos; G.byId=byId;
 }
-async function showIr() {
-  document.getElementById('out').textContent = 'lowering to IR...';
-  try { const d = await post('/ir', document.getElementById('code').value);
-    if(!d.ok){ document.getElementById('out').textContent='error: '+d.error; return; }
-    let s = 'IR graph: ' + d.nodes + ' content-addressed nodes, ' + d.roots + ' roots\n\n';
-    for (const [k,v] of Object.entries(d.histogram)) s += '  ' + k.padEnd(11) + v + '\n';
-    document.getElementById('out').textContent = s;
-  } catch(e){ document.getElementById('out').textContent = 'connection error: ' + e; }
+function fit(){ if(!G.nodes.length)return; let xs=Object.values(G.pos).map(p=>p.x), ys=Object.values(G.pos).map(p=>p.y);
+  const w=Math.max(...xs)+140, h=Math.max(...ys)+80; view.s=Math.min(cv.width/w, cv.height/h, 1.2)||1;
+  view.x=20; view.y=20; render(); }
+function render(){ const dpr=window.devicePixelRatio||1; cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.save(); ctx.translate(view.x,view.y); ctx.scale(view.s,view.s);
+  // edges
+  ctx.strokeStyle='#30363d'; ctx.lineWidth=1.5;
+  G.nodes.forEach(n=>{ const a=G.pos[n.id]; (n.children||[]).forEach(c=>{ const b=G.pos[c]; if(a&&b){
+    ctx.beginPath(); ctx.moveTo(a.x+60,a.y+30); ctx.lineTo(b.x+60,b.y); ctx.stroke(); }}); });
+  // nodes
+  G.nodes.forEach(n=>{ const p=G.pos[n.id]; if(!p)return; const col=KCOL[n.kind]||'#8b949e';
+    ctx.fillStyle='#161b22'; ctx.strokeStyle=col; ctx.lineWidth=2;
+    roundRect(p.x,p.y,120,44,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=col; ctx.font='bold 10px monospace'; ctx.fillText(n.kind, p.x+8, p.y+16);
+    ctx.fillStyle='#e6edf3'; ctx.font='11px monospace';
+    ctx.fillText((n.label||'').slice(0,14), p.x+8, p.y+32); });
+  ctx.restore();
 }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+// pan & pinch-zoom
+let drag=null, pinch=null;
+cv.addEventListener('touchstart',e=>{ if(e.touches.length===1){drag={x:e.touches[0].clientX-view.x,y:e.touches[0].clientY-view.y};}
+  else if(e.touches.length===2){ pinch=dist(e); } },{passive:true});
+cv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){ view.x=e.touches[0].clientX-drag.x; view.y=e.touches[0].clientY-drag.y; render(); }
+  else if(e.touches.length===2&&pinch){ const d=dist(e); view.s*=d/pinch; pinch=d; render(); } },{passive:true});
+cv.addEventListener('touchend',()=>{drag=null;pinch=null;});
+function dist(e){ const dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY; return Math.hypot(dx,dy); }
 </script>
 </body></html>"#;
