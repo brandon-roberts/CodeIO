@@ -150,14 +150,16 @@ const INDEX_HTML: &str = r#"<!DOCTYPE html>
 <style>
   :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --accent:#4a9eff; --muted:#8b949e; }
   * { box-sizing:border-box; }
-  html,body { margin:0; padding:0; min-height:100%; background:#0d1117; color:#e6edf3; }
+  html,body { margin:0; padding:0; min-height:100%; background:#0d1117; color:#e6edf3;
+              -webkit-backface-visibility:hidden; overflow-x:hidden; }
   body { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; -webkit-text-fill-color:#e6edf3; }
   header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
   header h1 { font-size:16px; margin:0; letter-spacing:1px; }
   header .tag { color:var(--muted); font-size:12px; }
   main { padding:12px; max-width:900px; margin:0 auto; }
   textarea { width:100%; height:300px; background:var(--panel); color:var(--fg); border:1px solid var(--border);
-             border-radius:8px; padding:12px; font:inherit; font-size:14px; resize:vertical; }
+             border-radius:8px; padding:12px; font:inherit; font-size:16px; resize:vertical;
+             -webkit-appearance:none; transform:none; backface-visibility:hidden; }
   .row { display:flex; gap:8px; margin:10px 0; }
   button { flex:1; padding:12px; background:var(--accent); color:#001; border:0; border-radius:8px;
            font:inherit; font-weight:700; font-size:14px; }
@@ -183,10 +185,6 @@ print("buys:", buys)</textarea>
   <pre id="out">ready.</pre>
 </main>
 <script>
-// nudge a repaint on load (mobile browsers sometimes leave a blank overlay until reflow)
-window.addEventListener('load', () => {
-  document.body.style.display='none'; void document.body.offsetHeight; document.body.style.display='';
-});
 async function post(path, code) {
   const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({code})});
