@@ -235,251 +235,203 @@ fn api_status() -> String {
     format!("{{\"live\":{live},\"building\":{building},\"planned\":{planned},\"features\":[{}]}}", arr.join(","))
 }
 
-const INDEX_HTML: &str = r#"<!DOCTYPE html>
+const INDEX_HTML: &str = r##"<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CodeIO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>CodeIO Blueprint</title>
 <style>
-  html,body { margin:0; padding:0; min-height:100%; background:#0d1117; color:#e6edf3;
-              -webkit-backface-visibility:hidden; overflow-x:hidden; }
-  body { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
-  header { padding:12px 16px; border-bottom:1px solid #30363d; display:flex; align-items:center; gap:10px; }
-  header h1 { font-size:16px; margin:0; letter-spacing:1px; }
-  header .tag { color:#8b949e; font-size:11px; }
-  .tabs { display:flex; border-bottom:1px solid #30363d; }
-  .tabs button { flex:1; padding:12px; background:#0d1117; color:#8b949e; border:0; border-bottom:2px solid transparent;
-                 font:inherit; font-size:13px; font-weight:700; }
-  .tabs button.on { color:#e6edf3; border-bottom-color:#4a9eff; }
-  main { padding:12px; max-width:960px; margin:0 auto; }
-  .view { display:none; } .view.on { display:block; }
-  textarea { width:100%; height:280px; background:#161b22; color:#e6edf3; border:1px solid #30363d;
-             border-radius:8px; padding:12px; font:inherit; font-size:16px; resize:vertical;
-             -webkit-appearance:none; backface-visibility:hidden; }
-  .row { display:flex; gap:8px; margin:10px 0; }
-  button.act { flex:1; padding:12px; background:#4a9eff; color:#001; border:0; border-radius:8px; font:inherit; font-weight:700; }
-  button.alt { flex:1; padding:12px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:8px; font:inherit; font-weight:700; }
-  pre { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; white-space:pre-wrap;
-        word-break:break-word; min-height:50px; font-size:13px; }
-  canvas { width:100%; height:60vh; background:#0a0d12; border:1px solid #30363d; border-radius:8px; touch-action:none; }
-  .lbl { color:#8b949e; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
-  .feat { display:flex; justify-content:space-between; padding:8px 10px; border:1px solid #30363d;
-          border-radius:6px; margin:4px 0; background:#161b22; font-size:12px; }
-  .badge { font-weight:700; } .live{color:#3fb950;} .building{color:#d29922;} .planned{color:#8b949e;}
-  .counts { display:flex; gap:8px; margin:8px 0; }
-  .counts div { flex:1; text-align:center; padding:10px; border:1px solid #30363d; border-radius:8px; background:#161b22; }
-  .counts .n { font-size:22px; font-weight:700; } .counts .k { font-size:10px; color:#8b949e; text-transform:uppercase; }
+  :root{ --blue:#1a3a6b; --blue2:#12294d; --ink:#dbe7ff; --line:#9fc1ff; --line2:#5d84c4; --accent:#ffd479; }
+  html,body{margin:0;padding:0;height:100%;background:#0b1c38;color:var(--ink);overflow:hidden;
+    font-family:ui-monospace,"Courier New",monospace;-webkit-user-select:none;user-select:none;}
+  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;}
+  #bar{height:44px;display:flex;align-items:center;gap:8px;padding:0 10px;background:#0b1c38;border-bottom:1px solid var(--line2);z-index:5;}
+  #bar h1{font-size:14px;margin:0;letter-spacing:2px;color:var(--line);}
+  #bar .sp{flex:1;}
+  #bar button{background:var(--blue);color:var(--ink);border:1px solid var(--line2);border-radius:5px;
+    padding:7px 10px;font:inherit;font-size:12px;}
+  #sheet{flex:1;position:relative;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;}
+  #editPane{position:absolute;left:0;right:0;bottom:0;height:40%;background:#0b1c38;border-top:2px solid var(--line2);
+    transform:translateY(100%);transition:transform .2s;z-index:6;display:flex;flex-direction:column;}
+  #editPane.open{transform:translateY(0);}
+  #editPane textarea{flex:1;margin:8px;background:#12294d;color:var(--ink);border:1px solid var(--line2);
+    border-radius:6px;padding:10px;font:inherit;font-size:15px;resize:none;}
+  #editPane .er{display:flex;gap:8px;padding:0 8px 8px;}
+  #editPane .er button{flex:1;padding:10px;border-radius:6px;border:1px solid var(--line2);background:var(--blue);color:var(--ink);font:inherit;font-weight:700;}
+  #out{position:absolute;left:8px;bottom:8px;max-width:70%;background:rgba(11,28,56,.85);border:1px solid var(--line2);
+    border-radius:6px;padding:6px 10px;font-size:11px;color:var(--ink);z-index:4;pointer-events:none;}
 </style></head>
-<body>
-<header><h1>CodeIO</h1><span class="tag">universal language · live</span></header>
-<div class="tabs">
-  <button class="on" onclick="tab('edit',this)">Editor</button>
-  <button onclick="tab('bp',this)">Blueprint</button>
-  <button onclick="tab('map',this)">Codebase</button>
-  <button onclick="tab('sys',this)">System</button>
-</div>
-<main>
-  <section id="edit" class="view on">
-    <textarea id="code">table Trades { sym: Str, qty: Int, buy: Bool }
+<body><div id="wrap">
+  <div id="bar"><h1>CodeIO &middot; BLUEPRINT</h1><span class="sp"></span>
+    <button onclick="zoomBy(1.4)">+</button>
+    <button onclick="zoomBy(0.7)">&minus;</button>
+    <button onclick="fitAll()">FIT</button>
+    <button onclick="toggleEdit()">CODE</button>
+  </div>
+  <div id="sheet"><canvas id="c"></canvas><div id="out">loading blueprint&hellip;</div></div>
+  <div id="editPane"><textarea id="code">table Trades { sym: Str, qty: Int, buy: Bool }
 insert Trades { sym: "AAPL", qty: 10, buy: true }
-insert Trades { sym: "BTC", qty: 2, buy: false }
 
 fn total(a, b) { a + b }
 let buys = from t in Trades where t.buy select t.sym
 print("buys:", buys)</textarea>
-    <div class="row"><button class="act" onclick="run()">Run</button>
-      <button class="alt" onclick="tab('bp',document.querySelectorAll('.tabs button')[1]); draw()">Blueprint</button></div>
-    <div class="lbl">Result</div><pre id="out">ready.</pre>
-  </section>
-
-  <section id="bp" class="view">
-    <div class="lbl">Blueprint — live IR graph (pinch/drag to zoom & pan)</div>
-    <canvas id="cv"></canvas>
-    <div class="row"><button class="alt" onclick="draw()">Refresh from code</button>
-      <button class="alt" onclick="fit()">Fit</button></div>
-    <pre id="bpinfo">tap "Refresh from code" to render the IR of your program.</pre>
-  </section>
-
-  <section id="map" class="view">
-    <div class="lbl">Codebase map — zoom to scale through the whole system (middle-out)</div>
-    <canvas id="mv"></canvas>
-    <div class="row"><button class="alt" onclick="loadMap()">Load repo</button>
-      <button class="alt" onclick="mapZoom(1.4)">Zoom +</button>
-      <button class="alt" onclick="mapZoom(0.7)">Zoom &minus;</button></div>
-    <pre id="mapinfo">tap "Load repo" to map the entire codebase.</pre>
-  </section>
-
-  <section id="sys" class="view">
-    <div class="lbl">System status — what is actually live</div>
-    <div class="counts"><div><div class="n live" id="cl">-</div><div class="k">live</div></div>
-      <div><div class="n building" id="cb">-</div><div class="k">building</div></div>
-      <div><div class="n planned" id="cp">-</div><div class="k">planned</div></div></div>
-    <div id="feats"></div>
-  </section>
-</main>
+    <div class="er"><button onclick="runCode()">RUN</button>
+      <button onclick="renderLogic()">DRAW LOGIC</button>
+      <button onclick="toggleEdit()">CLOSE</button></div>
+  </div>
+</div>
 <script>
-function tab(id, btn){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on')); if(btn)btn.classList.add('on');
-  if(id==='sys') loadStatus(); if(id==='map'&&!MAP) loadMap(); }
-async function post(p,code){ const r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})}); return r.json(); }
-async function run(){ document.getElementById('out').textContent='running...';
-  try{ const d=await post('/run',code.value); document.getElementById('out').textContent=d.ok?('=> '+d.result):('error: '+d.error);}catch(e){document.getElementById('out').textContent='err: '+e;} }
-async function loadStatus(){ try{ const r=await fetch('/status'); const d=await r.json();
-  cl.textContent=d.live; cb.textContent=d.building; cp.textContent=d.planned;
-  feats.innerHTML=d.features.map(f=>`<div class="feat"><span>${f.name}</span><span class="badge ${f.status}">${f.status}</span></div>`).join('');
-}catch(e){ feats.textContent='err: '+e; } }
+const c=document.getElementById('c'), ctx=c.getContext('2d');
+const code=document.getElementById('code'), outEl=document.getElementById('out');
+let cam={x:0,y:0,z:0.3}, world={crates:[],mode:'system',logic:null};
+function out(s){ outEl.textContent=s; }
+function toggleEdit(){ document.getElementById('editPane').classList.toggle('open'); }
 
-// ---- Blueprint: engineering-drawing renderer over the real IR ----
-let G={nodes:[],roots:[]}, view={x:30,y:60,s:1};
-const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
-// drafting palette per construct
-const SYM={
-  FN:       {shape:'ported', col:'#f78166', tag:'FUNC'},
-  CALL:     {shape:'process',col:'#d29922', tag:'PROC'},
-  QUERY:    {shape:'io',     col:'#a371f7', tag:'QUERY'},
-  TABLE_DEF:{shape:'store',  col:'#56d4dd', tag:'TABLE'},
-  RECORD:   {shape:'record', col:'#db61a2', tag:'REC'},
-  MATCH:    {shape:'decision',col:'#e3b341',tag:'BRANCH'},
-  LITERAL:  {shape:'terminal',col:'#3fb950',tag:'VAL'},
-  REF:      {shape:'terminal',col:'#4a9eff',tag:'REF'},
-  EFFECT:   {shape:'process',col:'#8b949e', tag:'EFF'},
-};
-const NW=140, NH=56, GAPX=190, GAPY=120;
-async function draw(){ const d=await post('/ir',code.value);
-  if(!d.ok){ document.getElementById('bpinfo').textContent='error: '+d.error; return; }
-  G=d; layout(); fit(); render();
-  document.getElementById('bpinfo').textContent=d.count+' components · '+d.roots.length+' roots · engineering view';
+// ---------- data ----------
+async function loadRepo(){ out('mapping system\u2026');
+  const r=await fetch('/map'); const d=await r.json(); world.crates=layoutRepo(d.crates); fitAll();
+  out(world.crates.length+' modules \u00b7 pinch to scale through the system'); }
+function layoutRepo(crates){ const cols=Math.ceil(Math.sqrt(crates.length)); const CW=560,CH=420,G=70;
+  let fc=0,sc=0;
+  const out=crates.map((c,i)=>{ const x=(i%cols)*(CW+G), y=Math.floor(i/cols)*(CH+G);
+    const files=c.files; fc+=files.length;
+    const fcols=Math.max(1,Math.ceil(Math.sqrt(files.length))), FW=(CW-50)/fcols;
+    const lf=files.map((f,fi)=>{ const fx=x+25+(fi%fcols)*FW, fy=y+70+Math.floor(fi/fcols)*100; sc+=f.symbols.length;
+      const scol=Math.max(1,Math.ceil(Math.sqrt(Math.max(1,f.symbols.length)))), SW=(FW-14)/scol;
+      const ls=f.symbols.map((s,si)=>({name:s.name,kind:s.kind,x:fx+6+(si%scol)*SW,y:fy+40+Math.floor(si/scol)*20,w:SW-4}));
+      return {name:f.name,loc:f.loc,x:fx,y:fy,w:FW-10,h:88,syms:ls}; });
+    return {name:c.name,x,y,w:CW,h:CH,files:lf}; });
+  world._fc=fc; world._sc=sc; return out; }
+
+// ---------- camera ----------
+function fitAll(){ if(!world.crates.length)return; const cols=Math.ceil(Math.sqrt(world.crates.length));
+  const W=cols*630, H=Math.ceil(world.crates.length/cols)*490;
+  cam.z=Math.min(c.clientWidth/W, c.clientHeight/H)*0.92; cam.x=(c.clientWidth-W*cam.z)/2; cam.y=(c.clientHeight-H*cam.z)/2; render(); }
+function zoomBy(f){ const mx=c.clientWidth/2,my=c.clientHeight/2; cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f;
+  cam.z=Math.max(0.03,Math.min(3,cam.z*f)); render(); }
+
+// ---------- drafting primitives ----------
+function line(x1,y1,x2,y2,w,dash){ ctx.save(); ctx.lineWidth=w/cam.z; if(dash)ctx.setLineDash(dash.map(d=>d/cam.z));
+  ctx.strokeStyle='#9fc1ff'; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore(); }
+function box(x,y,w,h,lw){ ctx.lineWidth=lw/cam.z; ctx.strokeStyle='#bcd6ff'; ctx.strokeRect(x,y,w,h); }
+function label(txt,x,y,size,col){ ctx.fillStyle=col||'#dbe7ff'; ctx.font='bold '+size+'px "Courier New",monospace';
+  ctx.fillText(txt,x,y); }
+
+// ---------- render: one sheet, scale-through ----------
+function render(){ const dpr=window.devicePixelRatio||1; c.width=c.clientWidth*dpr; c.height=c.clientHeight*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // blueprint paper
+  ctx.fillStyle='#12345f'; ctx.fillRect(0,0,c.clientWidth,c.clientHeight);
+  drawPaperGrid();
+  if(world.mode==='logic' && world.logic){ drawLogicSheet(); }
+  else { drawSystemSheet(); }
+  drawBorderAndTitle();
 }
-function layout(){ const byId={}; G.nodes.forEach(n=>byId[n.id]=n);
-  const depth={}, seen={}; let q=G.roots.map(r=>[r,0]);
+function drawPaperGrid(){ ctx.save(); ctx.strokeStyle='rgba(159,193,255,0.10)'; ctx.lineWidth=1;
+  const step=26; const ox=(cam.x%step+step)%step, oy=(cam.y%step+step)%step;
+  for(let x=ox;x<c.clientWidth;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.clientHeight);ctx.stroke();}
+  for(let y=oy;y<c.clientHeight;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.clientWidth,y);ctx.stroke();}
+  ctx.restore(); }
+function drawSystemSheet(){ ctx.save(); ctx.translate(cam.x,cam.y); ctx.scale(cam.z,cam.z); const z=cam.z;
+  world.crates.forEach(cr=>{
+    // module: heavy border box (title block style)
+    box(cr.x,cr.y,cr.w,cr.h,2.5);
+    // module title bar
+    ctx.fillStyle='rgba(159,193,255,0.08)'; ctx.fillRect(cr.x,cr.y,cr.w,44);
+    line(cr.x,cr.y+44,cr.x+cr.w,cr.y+44,1.5);
+    label('MODULE',cr.x+12,cr.y+18,13,'#7fa8e8'); label(cr.name.toUpperCase(),cr.x+12,cr.y+37,20,'#ffe6a8');
+    if(z>0.10){ cr.files.forEach(f=>{ box(f.x,f.y,f.w,f.h,1.2);
+      ctx.fillStyle='rgba(159,193,255,0.05)'; ctx.fillRect(f.x,f.y,f.w,22);
+      label(f.name,f.x+6,f.y+15,12,'#cfe0ff'); label(f.loc+' LOC',f.x+f.w-64,f.y+15,10,'#7fa8e8');
+      if(z>0.32){ f.syms.forEach(s=>{ drawSymbolCell(s); }); }
+    }); }
+  });
+  ctx.restore(); }
+const SK={fn:'#ffd479',struct:'#7fd6dd',enum:'#c39bff',trait:'#ff9e80'};
+function drawSymbolCell(s){ const col=SK[s.kind]||'#9fc1ff'; ctx.lineWidth=1/cam.z; ctx.strokeStyle=col;
+  ctx.strokeRect(s.x,s.y,Math.max(8,s.w),15);
+  // kind glyph
+  ctx.fillStyle=col;
+  if(s.kind==='fn'){ ctx.fillRect(s.x+2,s.y+5,4,4); }
+  else if(s.kind==='struct'){ ctx.strokeRect(s.x+2,s.y+4,5,6); }
+  else { ctx.beginPath(); ctx.arc(s.x+4,s.y+7,2.5,0,7); ctx.stroke(); }
+  if(cam.z>0.6){ ctx.fillStyle='#e8f0ff'; ctx.font='9px "Courier New",monospace';
+    ctx.fillText((s.name||'').slice(0,Math.floor(s.w/6)), s.x+10, s.y+11); } }
+
+// ---------- logic sheet (a program's algorithm, drafted) ----------
+function drawLogicSheet(){ const g=world.logic; ctx.save(); ctx.translate(cam.x,cam.y); ctx.scale(cam.z,cam.z);
+  // connectors
+  g.nodes.forEach(n=>{ const a=g.pos[n.id]; if(!a)return; (n.children||[]).forEach(cid=>{ const b=g.pos[cid]; if(!b)return;
+    const x1=a.x+a.w/2,y1=a.y+a.h,x2=b.x+b.w/2,y2=b.y,my=(y1+y2)/2;
+    ctx.strokeStyle='#7fa8e8'; ctx.lineWidth=1.4/cam.z; ctx.beginPath();
+    ctx.moveTo(x1,y1);ctx.lineTo(x1,my);ctx.lineTo(x2,my);ctx.lineTo(x2,y2-6);ctx.stroke();
+    ctx.fillStyle='#7fa8e8'; ctx.beginPath(); ctx.moveTo(x2,y2);ctx.lineTo(x2-4,y2-7);ctx.lineTo(x2+4,y2-7);ctx.closePath();ctx.fill(); }); });
+  g.nodes.forEach(n=>{ const p=g.pos[n.id]; if(p) drawLogicSymbol(n,p); });
+  ctx.restore(); }
+const LSYM={FN:['FUNC','#ffd479','ported'],CALL:['PROC','#ffb84d','proc'],QUERY:['QUERY','#c39bff','para'],
+  TABLE_DEF:['TABLE','#7fd6dd','store'],RECORD:['REC','#ff9ecb','rec'],MATCH:['BRANCH','#ffe08a','dia'],
+  LITERAL:['VAL','#8de6a0','pill'],REF:['REF','#9fc1ff','pill'],EFFECT:['EFF','#9fc1ff','proc']};
+function drawLogicSymbol(n,p){ const d=LSYM[n.kind]||['?','#9fc1ff','proc']; const x=p.x,y=p.y,w=p.w,h=p.h;
+  ctx.lineWidth=2/cam.z; ctx.strokeStyle=d[1]; ctx.fillStyle='rgba(18,52,95,0.9)';
+  if(d[2]==='store'){ ctx.beginPath();ctx.ellipse(x+w/2,y+8,w/2,8,0,0,7);ctx.moveTo(x,y+8);ctx.lineTo(x,y+h-8);
+      ctx.ellipse(x+w/2,y+h-8,w/2,8,0,0,Math.PI);ctx.lineTo(x+w,y+8);ctx.fill();ctx.stroke(); }
+  else if(d[2]==='dia'){ ctx.beginPath();ctx.moveTo(x+w/2,y);ctx.lineTo(x+w,y+h/2);ctx.lineTo(x+w/2,y+h);ctx.lineTo(x,y+h/2);ctx.closePath();ctx.fill();ctx.stroke(); }
+  else if(d[2]==='para'){ ctx.beginPath();ctx.moveTo(x+14,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w-14,y+h);ctx.lineTo(x,y+h);ctx.closePath();ctx.fill();ctx.stroke(); }
+  else if(d[2]==='pill'){ rr(x,y,w,h,h/2);ctx.fill();ctx.stroke(); }
+  else if(d[2]==='ported'){ rr(x,y,w,h,5);ctx.fill();ctx.stroke(); ctx.fillStyle=d[1];ctx.fillRect(x-4,y+h/2-4,4,8);ctx.fillRect(x+w,y+h/2-4,4,8); }
+  else { rr(x,y,w,h,3);ctx.fill();ctx.stroke(); }
+  ctx.fillStyle=d[1]; ctx.font='bold 9px "Courier New"'; ctx.fillText(d[0],x+8,y+15);
+  ctx.fillStyle='#e8f0ff'; ctx.font='11px "Courier New"'; ctx.fillText((n.label||'').slice(0,15),x+8,y+32); }
+function rr(x,y,w,h,r){ ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath(); }
+
+// ---------- title block + border (drafting furniture) ----------
+function drawBorderAndTitle(){ ctx.save();
+  ctx.strokeStyle='#9fc1ff'; ctx.lineWidth=2; ctx.strokeRect(6,6,c.clientWidth-12,c.clientHeight-12);
+  ctx.strokeRect(11,11,c.clientWidth-22,c.clientHeight-22);
+  // corner coordinate ticks
+  ctx.font='10px "Courier New"'; ctx.fillStyle='#7fa8e8';
+  ['A','B','C','D'].forEach((L,i)=>ctx.fillText(L, 16, 40+i*((c.clientHeight-80)/4)));
+  ['1','2','3','4'].forEach((N,i)=>ctx.fillText(N, 40+i*((c.clientWidth-80)/4), 22));
+  // title block bottom-right
+  const bw=230,bh=70,bx=c.clientWidth-bw-12,by=c.clientHeight-bh-12;
+  ctx.fillStyle='#0b1c38'; ctx.fillRect(bx,by,bw,bh); ctx.strokeStyle='#9fc1ff'; ctx.lineWidth=1.5; ctx.strokeRect(bx,by,bw,bh);
+  ctx.beginPath();ctx.moveTo(bx,by+24);ctx.lineTo(bx+bw,by+24);ctx.moveTo(bx,by+46);ctx.lineTo(bx+bw,by+46);
+  ctx.moveTo(bx+140,by+24);ctx.lineTo(bx+140,by+bh);ctx.stroke();
+  ctx.fillStyle='#ffe6a8'; ctx.font='bold 12px "Courier New"'; ctx.fillText('CodeIO SYSTEM', bx+8, by+17);
+  const lvl = world.mode==='logic'?'LOGIC': cam.z<0.10?'SYSTEM': cam.z<0.32?'MODULE': cam.z<0.6?'SYMBOLS':'DETAIL';
+  ctx.fillStyle='#dbe7ff'; ctx.font='10px "Courier New"';
+  ctx.fillText('VIEW: '+lvl, bx+8, by+40); ctx.fillText('SCALE '+cam.z.toFixed(2)+'x', bx+8, by+62);
+  ctx.fillText('DWG 001', bx+148, by+40); ctx.fillText('REV A', bx+148, by+62);
+  ctx.restore(); }
+
+// ---------- code exec / logic ----------
+async function post(p,src){ const r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:src})}); return r.json(); }
+async function runCode(){ out('running\u2026'); const d=await post('/run',code.value); out(d.ok?('=> '+d.result):('error: '+d.error)); }
+async function renderLogic(){ const d=await post('/ir',code.value); if(!d.ok){ out('error: '+d.error); return; }
+  layoutLogic(d); world.mode='logic'; toggleEdit(); fitLogic(); out('logic drawn \u00b7 '+d.count+' components \u2014 tap FIT / pinch to scale'); }
+function layoutLogic(d){ const byId={}; d.nodes.forEach(n=>byId[n.id]=n); const depth={},seen={}; let q=d.roots.map(r=>[r,0]);
   while(q.length){ const [id,dp]=q.shift(); if(seen[id])continue; seen[id]=1; depth[id]=dp;
-    (byId[id]?.children||[]).forEach(c=>{ if(!seen[c])q.push([c,dp+1]); }); }
-  const rows={}; G.nodes.forEach(n=>{ const dp=depth[n.id]??0; (rows[dp]=rows[dp]||[]).push(n.id); });
-  const pos={}; Object.keys(rows).forEach(dp=>{ rows[dp].forEach((id,i)=>{ pos[id]={x:i*GAPX,y:dp*GAPY}; }); });
-  G.pos=pos; G.byId=byId;
-}
-function fit(){ if(!G.nodes.length)return; const xs=Object.values(G.pos).map(p=>p.x),ys=Object.values(G.pos).map(p=>p.y);
-  const w=Math.max(...xs)+NW+60,h=Math.max(...ys)+NH+60; view.s=Math.min(cv.clientWidth/w,cv.clientHeight/h,1.3)||1;
-  view.x=30; view.y=60; render(); }
-function render(){ const dpr=window.devicePixelRatio||1; cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cv.clientWidth,cv.clientHeight);
-  drawGrid(); drawTitleBlock();
-  ctx.save(); ctx.translate(view.x,view.y); ctx.scale(view.s,view.s);
-  // orthogonal ported connectors first (under nodes)
-  G.nodes.forEach(n=>{ const a=G.pos[n.id]; if(!a)return;
-    (n.children||[]).forEach(c=>{ const b=G.pos[c]; if(!b)return; connector(a,b); }); });
-  // components
-  G.nodes.forEach(n=>{ const p=G.pos[n.id]; if(!p)return; component(n,p); });
-  ctx.restore();
-  drawLegend();
-}
-function drawGrid(){ ctx.save(); ctx.strokeStyle='#131820'; ctx.lineWidth=1; const step=28*view.s;
-  const ox=view.x%step, oy=view.y%step;
-  for(let x=ox;x<cv.clientWidth;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cv.clientHeight);ctx.stroke();}
-  for(let y=oy;y<cv.clientHeight;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.clientWidth,y);ctx.stroke();}
-  ctx.restore(); }
-function drawTitleBlock(){ ctx.save(); ctx.fillStyle='#0d1117'; ctx.strokeStyle='#30363d'; ctx.lineWidth=1;
-  ctx.fillRect(0,0,cv.clientWidth,34); ctx.strokeRect(0,0,cv.clientWidth,34);
-  ctx.fillStyle='#e6edf3'; ctx.font='bold 12px monospace'; ctx.fillText('CodeIO · BLUEPRINT', 10, 22);
-  ctx.fillStyle='#8b949e'; ctx.font='10px monospace';
-  ctx.fillText('components: '+(G.nodes?.length||0)+'   scale: '+view.s.toFixed(2)+'x   sheet 1/1', cv.clientWidth-260, 22);
-  ctx.restore(); }
-function drawLegend(){ const items=[['FUNC','#f78166'],['PROC','#d29922'],['QUERY','#a371f7'],['TABLE','#56d4dd'],['BRANCH','#e3b341'],['VAL/REF','#3fb950']];
-  ctx.save(); const bx=8,by=cv.clientHeight-18-items.length*14, bw=110, bh=items.length*14+10;
-  ctx.fillStyle='rgba(13,17,23,0.9)'; ctx.strokeStyle='#30363d'; ctx.fillRect(bx,by,bw,bh); ctx.strokeRect(bx,by,bw,bh);
-  ctx.font='9px monospace'; items.forEach((it,i)=>{ ctx.fillStyle=it[1]; ctx.fillRect(bx+6,by+8+i*14,10,8);
-    ctx.fillStyle='#c9d1d9'; ctx.fillText(it[0], bx+22, by+16+i*14); }); ctx.restore(); }
-// orthogonal connector: output port (bottom-center of parent) -> input port (top-center of child)
-function connector(a,b){ const x1=a.x+NW/2, y1=a.y+NH, x2=b.x+NW/2, y2=b.y; const my=(y1+y2)/2;
-  ctx.strokeStyle='#4a5568'; ctx.lineWidth=1.5; ctx.beginPath();
-  ctx.moveTo(x1,y1); ctx.lineTo(x1,my); ctx.lineTo(x2,my); ctx.lineTo(x2,y2-6); ctx.stroke();
-  // arrowhead
-  ctx.fillStyle='#4a5568'; ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-4,y2-7); ctx.lineTo(x2+4,y2-7); ctx.closePath(); ctx.fill(); }
-function component(n,p){ const s=SYM[n.kind]||{shape:'process',col:'#8b949e',tag:n.kind};
-  ctx.lineWidth=2; ctx.strokeStyle=s.col; ctx.fillStyle='#161b22';
-  const x=p.x,y=p.y,w=NW,h=NH;
-  switch(s.shape){
-    case 'store': // data-store cylinder
-      ctx.beginPath(); ctx.ellipse(x+w/2,y+8,w/2,8,0,0,Math.PI*2); ctx.moveTo(x,y+8); ctx.lineTo(x,y+h-8);
-      ctx.ellipse(x+w/2,y+h-8,w/2,8,0,0,Math.PI); ctx.lineTo(x+w,y+8); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(x+w/2,y+8,w/2,8,0,0,Math.PI*2); ctx.stroke(); break;
-    case 'decision': // diamond
-      ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w,y+h/2); ctx.lineTo(x+w/2,y+h); ctx.lineTo(x,y+h/2); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
-    case 'io': case 'query': // parallelogram
-      ctx.beginPath(); ctx.moveTo(x+16,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w-16,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
-    case 'terminal': // rounded pill
-      rr(x,y,w,h,h/2); ctx.fill(); ctx.stroke(); break;
-    case 'ported': // function block with ports
-      rr(x,y,w,h,6); ctx.fill(); ctx.stroke();
-      ctx.fillStyle=s.col; ctx.fillRect(x-4,y+h/2-5,4,10); ctx.fillRect(x+w,y+h/2-5,4,10); break;
-    default: // process rectangle
-      rr(x,y,w,h,4); ctx.fill(); ctx.stroke();
-  }
-  ctx.fillStyle=s.col; ctx.font='bold 9px monospace'; ctx.fillText(s.tag, x+10, y+16);
-  ctx.fillStyle='#e6edf3'; ctx.font='11px monospace'; ctx.fillText((n.label||'').slice(0,15), x+10, y+34);
-}
-function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    (byId[id]?.children||[]).forEach(cc=>{ if(!seen[cc])q.push([cc,dp+1]); }); }
+  const rows={}; d.nodes.forEach(n=>{ const dp=depth[n.id]??0;(rows[dp]=rows[dp]||[]).push(n.id); });
+  const pos={}; Object.keys(rows).forEach(dp=>rows[dp].forEach((id,i)=>pos[id]={x:i*200,y:dp*130,w:140,h:56}));
+  d.pos=pos; world.logic=d; }
+function fitLogic(){ const g=world.logic; if(!g)return; const xs=Object.values(g.pos).map(p=>p.x),ys=Object.values(g.pos).map(p=>p.y);
+  const W=Math.max(...xs)+200,H=Math.max(...ys)+120; cam.z=Math.min(c.clientWidth/W,c.clientHeight/H,1.2)||1;
+  cam.x=(c.clientWidth-W*cam.z)/2; cam.y=40; render(); }
+
+// ---------- input ----------
 let drag=null,pinch=null;
-cv.addEventListener('touchstart',e=>{ if(e.touches.length===1)drag={x:e.touches[0].clientX-view.x,y:e.touches[0].clientY-view.y};
-  else if(e.touches.length===2)pinch=dist(e); },{passive:true});
-cv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){view.x=e.touches[0].clientX-drag.x;view.y=e.touches[0].clientY-drag.y;render();}
-  else if(e.touches.length===2&&pinch){const d=dist(e);view.s=Math.max(0.2,Math.min(3,view.s*d/pinch));pinch=d;render();} },{passive:true});
-cv.addEventListener('touchend',()=>{drag=null;pinch=null;});
-function dist(e){ const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY; return Math.hypot(dx,dy); }
-
-// ===== Codebase map: camera-based semantic zoom over the WHOLE repo =====
-let MAP=null, cam={x:0,y:0,z:0.15};
-const mv=document.getElementById('mv'), mctx=mv.getContext('2d');
-async function loadMap(){ document.getElementById('mapinfo').textContent='mapping repo...';
-  try{ const r=await fetch('/map'); const d=await r.json(); MAP=layoutMap(d.crates); centerMap(); renderMap();
-    document.getElementById('mapinfo').textContent=MAP.crates.length+' crates · '+MAP.fileCount+' files · '+MAP.symCount+' symbols — pinch to scale in/out';
-  }catch(e){ document.getElementById('mapinfo').textContent='err: '+e; } }
-function layoutMap(crates){ let fileCount=0, symCount=0;
-  const cols=Math.ceil(Math.sqrt(crates.length)); const CW=520, CH=380, GAP=40;
-  const laidCrates=crates.map((c,i)=>{ const cx=(i%cols)*(CW+GAP), cy=Math.floor(i/cols)*(CH+GAP);
-    const files=c.files; fileCount+=files.length;
-    const fcols=Math.max(1,Math.ceil(Math.sqrt(files.length))); const FW=(CW-40)/fcols;
-    const laidFiles=files.map((f,fi)=>{ const fx=cx+20+(fi%fcols)*FW, fy=cy+50+Math.floor(fi/fcols)*90;
-      symCount+=f.symbols.length;
-      const scols=Math.max(1,Math.ceil(Math.sqrt(Math.max(1,f.symbols.length)))); const SW=(FW-10)/scols;
-      const laidSyms=f.symbols.map((s,si)=>({name:s.name,kind:s.kind, x:fx+4+(si%scols)*SW, y:fy+34+Math.floor(si/scols)*16, w:SW-3}));
-      return {name:f.name,loc:f.loc, x:fx, y:fy, w:FW-8, h:80, syms:laidSyms}; });
-    return {name:c.name, x:cx, y:cy, w:CW, h:CH, laidFiles}; });
-  return {crates:laidCrates, fileCount, symCount, cols, CW, CH, GAP}; }
-function centerMap(){ if(!MAP)return; const cols=MAP.cols;
-  const totalW=cols*(MAP.CW+MAP.GAP), totalH=Math.ceil(MAP.crates.length/cols)*(MAP.CH+MAP.GAP);
-  cam.z=Math.min(mv.clientWidth/totalW, mv.clientHeight/totalH)*0.9;
-  cam.x=(mv.clientWidth-totalW*cam.z)/2; cam.y=(mv.clientHeight-totalH*cam.z)/2; }
-const CKIND={fn:'#d29922',struct:'#56d4dd',enum:'#a371f7',trait:'#f78166'};
-function renderMap(){ if(!MAP)return; const dpr=window.devicePixelRatio||1;
-  mv.width=mv.clientWidth*dpr; mv.height=mv.clientHeight*dpr; mctx.setTransform(dpr,0,0,dpr,0,0);
-  mctx.clearRect(0,0,mv.clientWidth,mv.clientHeight);
-  mctx.save(); mctx.translate(cam.x,cam.y); mctx.scale(cam.z,cam.z); const z=cam.z;
-  MAP.crates.forEach(c=>{ mctx.fillStyle='#11161d'; mctx.strokeStyle='#30363d'; mctx.lineWidth=2/z;
-    mctx.fillRect(c.x,c.y,c.w,c.h); mctx.strokeRect(c.x,c.y,c.w,c.h);
-    mctx.fillStyle='#4a9eff'; mctx.font='bold 18px monospace'; mctx.fillText(c.name, c.x+14, c.y+30);
-    if(z>0.12){ c.laidFiles.forEach(f=>{ mctx.fillStyle='#161b22'; mctx.strokeStyle='#3a4150'; mctx.lineWidth=1/z;
-      mctx.fillRect(f.x,f.y,f.w,f.h); mctx.strokeRect(f.x,f.y,f.w,f.h);
-      mctx.fillStyle='#c9d1d9'; mctx.font='11px monospace'; mctx.fillText(f.name+'  ·  '+f.loc+' LOC', f.x+6, f.y+16);
-      if(z>0.35){ f.syms.forEach(s=>{ mctx.fillStyle=CKIND[s.kind]||'#8b949e';
-        mctx.fillRect(s.x,s.y,Math.max(6,s.w),12);
-        if(z>0.7){ mctx.fillStyle='#0d1117'; mctx.font='8px monospace'; mctx.fillText((s.name||'').slice(0,Math.floor(s.w/5)), s.x+2, s.y+9); } }); }
-    }); } });
-  mctx.restore();
-  mctx.fillStyle='#0d1117'; mctx.fillRect(0,0,mv.clientWidth,26); mctx.strokeStyle='#30363d'; mctx.strokeRect(0,0,mv.clientWidth,26);
-  const lvl = z<0.12?'SYSTEM (crates)': z<0.35?'MODULE (files)': z<0.7?'SYMBOLS':'DETAIL';
-  mctx.fillStyle='#e6edf3'; mctx.font='bold 11px monospace'; mctx.fillText('LEVEL: '+lvl+'   scale '+z.toFixed(2)+'x', 10, 18); }
-function mapZoom(f){ const cx=mv.clientWidth/2, cy=mv.clientHeight/2;
-  cam.x=cx-(cx-cam.x)*f; cam.y=cy-(cy-cam.y)*f; cam.z*=f; renderMap(); }
-let mdrag=null,mpinch=null;
-mv.addEventListener('touchstart',e=>{ if(e.touches.length===1)mdrag={x:e.touches[0].clientX-cam.x,y:e.touches[0].clientY-cam.y};
-  else if(e.touches.length===2)mpinch=dist(e); },{passive:true});
-mv.addEventListener('touchmove',e=>{ if(e.touches.length===1&&mdrag){cam.x=e.touches[0].clientX-mdrag.x;cam.y=e.touches[0].clientY-mdrag.y;renderMap();}
-  else if(e.touches.length===2&&mpinch){ const d=dist(e); const f=d/mpinch;
-    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2, my=(e.touches[0].clientY+e.touches[1].clientY)/2;
-    cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f; cam.z=Math.max(0.04,Math.min(2,cam.z*f)); mpinch=d; renderMap(); } },{passive:true});
-mv.addEventListener('touchend',()=>{mdrag=null;mpinch=null;});
-
+c.addEventListener('touchstart',e=>{ if(e.touches.length===1)drag={x:e.touches[0].clientX-cam.x,y:e.touches[0].clientY-cam.y};
+  else if(e.touches.length===2)pinch=dst(e); },{passive:true});
+c.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){cam.x=e.touches[0].clientX-drag.x;cam.y=e.touches[0].clientY-drag.y;render();}
+  else if(e.touches.length===2&&pinch){ const d=dst(e),f=d/pinch,mx=(e.touches[0].clientX+e.touches[1].clientX)/2,my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    cam.x=mx-(mx-cam.x)*f;cam.y=my-(my-cam.y)*f;cam.z=Math.max(0.03,Math.min(3,cam.z*f));pinch=d;render(); } },{passive:true});
+c.addEventListener('touchend',()=>{drag=null;pinch=null;});
+function dst(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+// double-tap system<->reset
+let lastTap=0; c.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTap<300){ if(world.mode==='logic'){world.mode='system';fitAll();} else fitAll(); } lastTap=now; });
+window.addEventListener('resize',render);
+loadRepo();
 </script>
-</body></html>"#;
+</body></html>"##;
