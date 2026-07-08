@@ -2,6 +2,8 @@
 //! Every node carries full metadata: kind, children (by content-address), attrs, and provenance.
 
 use codeio_lang::parser::{Expr, Stmt};
+
+pub mod eval;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 

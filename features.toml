@@ -344,3 +344,19 @@ pillar = "P5/P8"
 status = "planned"
 entry = "docs/workbench-vision.md"
 desc = "Self-hosting blueprint tool; HTML/CSS/JS designer chrome; semantic zoom blueprint->UPL->lower-constructs->source as IR-tier projections; router index links zoom levels; trace log = live stack trace."
+
+[[feature]]
+id = "value-library"
+name = "Dynamic value library (interned, dedup, vault backend)"
+pillar = "P1/P3"
+status = "live"
+entry = "services/crates/codeio-values"
+desc = "Static values interned + content-addressed + deduplicated, referenced by id not embedded (normalization payoff). Pluggable backend: memory or encrypted vault (audited-crypto-only, no hand-rolled). 4 tests."
+
+[[feature]]
+id = "ir-eval"
+name = "IR-driven evaluator (execute from the graph)"
+pillar = "P1"
+status = "building"
+entry = "services/crates/codeio-ir"
+desc = "Executes directly from the content-addressed IR graph, closing the IR<->execution loop (graph edits change what runs). v0: literals/refs/calls/arithmetic; full tree-walker parity grows as IR carries scope. 7 tests."

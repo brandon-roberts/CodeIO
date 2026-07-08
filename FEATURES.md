@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 8 live · 11 building · 23 planned_
+_Regenerated 2026-07-08 — 9 live · 12 building · 23 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
@@ -10,6 +10,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 |--------|---------|--------|-------------|-------------|
 | ✅ LIVE | **codeio CLI (main entry point)** | P1 | `services/crates/codeio-cli` | Single entry point: start services, check status, list features. `cargo run -p codeio-cli -- --help` |
 | ✅ LIVE | **codeio doctor (system analyzer, go/no-go)** | P1 | `services/crates/codeio-cli` | Scans toolchains (Rust/protoc/python/git/node/ghc/g++), AI backends (Ollama), and CodeIO services; per-OS install hints; exits nonzero on NO-GO for CI use. |
+| ✅ LIVE | **Dynamic value library (interned, dedup, vault backend)** | P1/P3 | `services/crates/codeio-values` | Static values interned + content-addressed + deduplicated, referenced by id not embedded (normalization payoff). Pluggable backend: memory or encrypted vault (audited-crypto-only, no hand-rolled). 4 tests. |
 | ✅ LIVE | **Minimal interpreter (M2)** | P1/P6 | `services/crates/codeio-lang` | Lexer, Pratt parser, tree-walking interpreter with closures; codeio run + codeio repl; 9-test suite green. Tables/ai/meta/bridges land next. |
 | ✅ LIVE | **Canonical shared IR (materialized in engine)** | P1/P6/P8 | `services/crates/codeio-ir` | The single content-addressed IR: 12 node kinds, per-node provenance + metadata, content-address dedup, kind-histogram self-analysis. Materializes any .cio program; `codeio ir <file>` shows the graph. Tested. |
 | ✅ LIVE | **Proto3 cross-language contracts** | P1/P8 | `proto/` | All cross-layer APIs defined in Protocol Buffers; source of truth for every service. |
@@ -17,6 +18,7 @@ Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet pr
 | ✅ LIVE | **Android/Termux runner (setup script + cio menu)** | P5 | `tools/termux` | One-command setup.sh (install/clone/build/launcher) and an interactive `cio menu` for phone-friendly use; runs CodeIO natively on Android, no cloud. |
 | ✅ LIVE | **Routing & indexing engine (selector/router/index, tier-normalized)** | P6/P8 | `services/crates/codeio-router` | Match+route+index only (no code writing): L0 pure selector matching, L1 relative/dynamic routing with cascade, L2 bidirectional IR<->location index + replayable trace. Doubles as UI style-mapping engine. 9 tests. |
 | 🚧 BUILDING | **Dependency map service** | P1 | `services/crates/codeio-depmap` | Import/dependency graph resolver. |
+| 🚧 BUILDING | **IR-driven evaluator (execute from the graph)** | P1 | `services/crates/codeio-ir` | Executes directly from the content-addressed IR graph, closing the IR<->execution loop (graph edits change what runs). v0: literals/refs/calls/arithmetic; full tree-walker parity grows as IR carries scope. 7 tests. |
 | 🚧 BUILDING | **Language spec v0 (M1)** | P2/P3/P4 | `docs/language-spec.md` | Syntax + semantics: table declarations, query expressions, ai primitive, inline meta forms. |
 | 🚧 BUILDING | **Workspace indexer service** | P3 | `services/crates/codeio-index` | Scans workspaces into content-addressed IndexEntry chunks with symbol records. Compiles; needs tests + end-to-end exercise. |
 | 🚧 BUILDING | **Spotlight hybrid search** | P3/P4 | `services/crates/codeio-spotlight` | Trigram inverted index + semantic tier with RRF fusion. Compiles; needs tests + end-to-end exercise. |
