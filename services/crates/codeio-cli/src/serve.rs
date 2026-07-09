@@ -68,6 +68,8 @@ fn route(method: &str, path: &str, body: &str) -> (&'static str, &'static str, S
         ("POST", "/ir") => ("200 OK", "application/json", api_ir(body)),
         ("GET", "/status") => ("200 OK", "application/json", api_status()),
         ("GET", "/map") => ("200 OK", "application/json", api_map()),
+        ("POST", "/source") => ("200 OK", "application/json", api_source(body)),
+        ("POST", "/source") => ("200 OK", "application/json", api_source(body)),
         _ => ("404 Not Found", "text/plain", "not found".into()),
     }
 }
@@ -210,6 +212,33 @@ fn api_map() -> String {
     format!("{{\"ok\":true,\"crates\":[{}]}}", crates.join(","))
 }
 
+fn api_source(body: &str) -> String {
+    // body: {"crate":"codeio-lang","file":"lexer.rs"}
+    let getf = |key: &str| -> String {
+        if let Some(i) = body.find(&format!("\"{key}\"")) {
+            if let Some(colon) = body[i..].find(':') {
+                let rest = &body[i+colon+1..];
+                if let Some(s) = rest.find('"') {
+                    let after = &rest[s+1..];
+                    if let Some(e) = after.find('"') { return after[..e].to_string(); }
+                }
+            }
+        }
+        String::new()
+    };
+    let cr = getf("crate"); let file = getf("file");
+    let root = repo_root_dir();
+    let path = root.join("services/crates").join(&cr).join("src").join(&file);
+    match std::fs::read_to_string(&path) {
+        Ok(src) => {
+            let lines: Vec<String> = src.lines().take(400).map(|l| format!("\"{}\"", json_escape(l))).collect();
+            format!("{{\"ok\":true,\"crate\":\"{}\",\"file\":\"{}\",\"lines\":[{}]}}",
+                json_escape(&cr), json_escape(&file), lines.join(","))
+        }
+        Err(e) => format!("{{\"ok\":false,\"error\":\"{}\"}}", json_escape(&e.to_string())),
+    }
+}
+
 fn api_status() -> String {
     // read features.toml (repo root discovered by walking up) to show real system state
     let mut dir = std::env::current_dir().unwrap_or_default();
@@ -348,9 +377,30 @@ function drawSystemSheet(){ ctx.save(); ctx.translate(cam.x,cam.y); ctx.scale(ca
       ctx.fillStyle='rgba(159,193,255,0.05)'; ctx.fillRect(f.x,f.y,f.w,22);
       label(f.name,f.x+6,f.y+15,12,'#cfe0ff'); label(f.loc+' LOC',f.x+f.w-64,f.y+15,10,'#7fa8e8');
       if(z>0.32){ f.syms.forEach(s=>{ drawSymbolCell(s); }); }
+      // DEEPEST LEVEL: at high zoom, render the file's ACTUAL source inside its box
+      if(z>1.6){ drawSourcePreview(cr,f); }
     }); }
   });
   ctx.restore(); }
+// source cache and on-demand fetch for the deepest zoom level
+const SRC={};
+function keyOf(cr,f){ return cr.name+'/'+f.name; }
+function ensureSource(cr,f){ const k=keyOf(cr,f); if(SRC[k]!==undefined) return;
+  SRC[k]=null; // pending
+  fetch('/source',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({crate:cr.name,file:f.name})}).then(r=>r.json()).then(d=>{
+      SRC[k]= d.ok? d.lines : ['<'+(d.error||'error')+'>']; render(); }).catch(()=>{SRC[k]=['<fetch error>'];}); }
+function drawSourcePreview(cr,f){ ensureSource(cr,f); const k=keyOf(cr,f); const lines=SRC[k];
+  // draw a code sheet overlaying the file box, expanded downward
+  const x=f.x, y=f.y+f.h+6, w=f.w, lh=13, max=lines?Math.min(lines.length,60):1;
+  ctx.fillStyle='#0a1730'; ctx.fillRect(x,y,w,max*lh+10); ctx.strokeStyle='#5d84c4'; ctx.lineWidth=1/cam.z; ctx.strokeRect(x,y,w,max*lh+10);
+  ctx.fillStyle='#7fa8e8'; ctx.font='bold 9px "Courier New"'; ctx.fillText('SOURCE · '+f.name, x+6, y+12);
+  if(!lines){ ctx.fillStyle='#9fc1ff'; ctx.font='10px "Courier New"'; ctx.fillText('loading…', x+6, y+26); return; }
+  ctx.font='10px "Courier New"';
+  for(let i=0;i<max;i++){ const ln=lines[i]||'';
+    ctx.fillStyle='#3a5a8f'; ctx.fillText(String(i+1).padStart(3), x+4, y+26+i*lh);
+    ctx.fillStyle='#cfe0ff'; ctx.fillText(ln.slice(0,90), x+30, y+26+i*lh); }
+}
 const SK={fn:'#ffd479',struct:'#7fd6dd',enum:'#c39bff',trait:'#ff9e80'};
 function drawSymbolCell(s){ const col=SK[s.kind]||'#9fc1ff'; ctx.lineWidth=1/cam.z; ctx.strokeStyle=col;
   ctx.strokeRect(s.x,s.y,Math.max(8,s.w),15);
@@ -426,19 +476,30 @@ function fitLogic(){ const g=world.logic; if(!g)return; const xs=Object.values(g
 
 // ---------- input ----------
 let drag=null,pinch=null;
-c.addEventListener('touchstart',e=>{ if(e.touches.length===1)drag={x:e.touches[0].clientX-cam.x,y:e.touches[0].clientY-cam.y};
-  else if(e.touches.length===2)pinch=dst(e); },{passive:true});
-c.addEventListener('touchmove',e=>{ if(e.touches.length===1&&drag){cam.x=e.touches[0].clientX-drag.x;cam.y=e.touches[0].clientY-drag.y;render();}
-  else if(e.touches.length===2&&pinch){ const d=dst(e),f=d/pinch,mx=(e.touches[0].clientX+e.touches[1].clientX)/2,my=(e.touches[0].clientY+e.touches[1].clientY)/2;
-    cam.x=mx-(mx-cam.x)*f;cam.y=my-(my-cam.y)*f;cam.z=Math.max(0.02,Math.min(6,cam.z*f));pinch=d;render(); } },{passive:true});
-c.addEventListener('touchend',()=>{drag=null;pinch=null;});
-function dst(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
-// desktop/trackpad wheel zoom (also proves the zoom path works)
-c.addEventListener('wheel',e=>{ e.preventDefault(); const f=e.deltaY<0?1.1:0.9;
-  const mx=e.clientX,my=e.clientY; cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f;
-  cam.z=Math.max(0.02,Math.min(6,cam.z*f)); render(); },{passive:false});
-// double-tap system<->reset
-let lastTap=0; c.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTap<300){ if(world.mode==='logic'){world.mode='system';fitAll();} else fitAll(); } lastTap=now; });
+// ---------- input (non-passive so gestures aren't hijacked by the browser) ----------
+function pt(e,i){ const r=c.getBoundingClientRect(); return {x:e.touches[i].clientX-r.left, y:e.touches[i].clientY-r.top}; }
+function dst(e){ const a=pt(e,0),b=pt(e,1); return Math.hypot(a.x-b.x,a.y-b.y); }
+function mid(e){ const a=pt(e,0),b=pt(e,1); return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+let drag=null,pinch=null,lastTap=0,moved=false;
+c.addEventListener('touchstart',e=>{ e.preventDefault(); moved=false;
+  if(e.touches.length===1){ const p=pt(e,0); drag={x:p.x-cam.x,y:p.y-cam.y}; }
+  else if(e.touches.length===2){ pinch=dst(e); drag=null; } },{passive:false});
+c.addEventListener('touchmove',e=>{ e.preventDefault(); moved=true;
+  if(e.touches.length===1&&drag){ const p=pt(e,0); cam.x=p.x-drag.x; cam.y=p.y-drag.y; render(); }
+  else if(e.touches.length===2&&pinch){ const d=dst(e), f=d/pinch, m=mid(e);
+    cam.x=m.x-(m.x-cam.x)*f; cam.y=m.y-(m.y-cam.y)*f;
+    cam.z=Math.max(0.02,Math.min(8,cam.z*f)); pinch=d; render(); } },{passive:false});
+c.addEventListener('touchend',e=>{ 
+  if(e.touches.length===0){
+    if(!moved){ const now=Date.now();
+      if(now-lastTap<300){ if(world.mode==='logic'){world.mode='system';fitAll();} else fitAll(); }
+      lastTap=now; }
+    drag=null; pinch=null;
+  } },{passive:false});
+c.addEventListener('wheel',e=>{ e.preventDefault(); const r=c.getBoundingClientRect();
+  const f=e.deltaY<0?1.12:0.89, mx=e.clientX-r.left, my=e.clientY-r.top;
+  cam.x=mx-(mx-cam.x)*f; cam.y=my-(my-cam.y)*f; cam.z=Math.max(0.02,Math.min(8,cam.z*f)); render(); },{passive:false});
+
 window.addEventListener('resize',()=>{sizeCanvas();render();});
 // ensure canvas has real dimensions before first paint
 requestAnimationFrame(()=>{ sizeCanvas(); loadRepo(); });

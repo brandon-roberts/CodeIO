@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit. Edit features.toml and run tools/scripts/gen_docs.py -->
 
-_Regenerated 2026-07-08 — 11 live · 13 building · 22 planned_
+_Regenerated 2026-07-09 — 11 live · 13 building · 22 planned_
 
 Legend: ✅ LIVE = working end-to-end · 🚧 BUILDING = code exists, not yet proven · 📋 PLANNED = theory/design only
 
